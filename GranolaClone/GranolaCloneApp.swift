@@ -7,26 +7,18 @@
 
 import SwiftUI
 import SwiftData
+import AVFoundation
 
 @main
 struct GranolaCloneApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @StateObject private var menuBarManager = MenuBarManager()
+    @StateObject private var permissionsManager = AudioPermissionsManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(menuBarManager)
+                .environmentObject(permissionsManager)
         }
-        .modelContainer(sharedModelContainer)
     }
 }

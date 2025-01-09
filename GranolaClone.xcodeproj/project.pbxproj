@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		83E977E62D2FE96B00F21592 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 83E977E52D2FE96B00F21592 /* WhisperKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		839806AC2D2D6EAC00E2BE1E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				83E977E62D2FE96B00F21592 /* WhisperKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = GranolaClone;
 			packageProductDependencies = (
+				83E977E52D2FE96B00F21592 /* WhisperKit */,
 			);
 			productName = GranolaClone;
 			productReference = 839806982D2D6EAB00E2BE1E /* GranolaClone.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 8398068F2D2D6EAB00E2BE1E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 839806992D2D6EAB00E2BE1E /* Products */;
 			projectDirPath = "";
@@ -545,6 +554,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		83E977E52D2FE96B00F21592 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 839806902D2D6EAB00E2BE1E /* Project object */;
 }

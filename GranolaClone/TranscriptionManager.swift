@@ -8,11 +8,10 @@ class TranscriptionManager: ObservableObject {
     @Published var isInitialized: Bool = false
     
     private var audioEngine: AVAudioEngine?
+    private var audioFile: AVAudioFile?
     private var inputNode: AVAudioInputNode?
     private var whisperKit: WhisperKit?
-    
-    private let bufferSize: AVAudioFrameCount = 1024
-    private let sampleRate: Double = 16000
+    private var tempURL: URL?
     
     init() {
         setupAudioEngine()
@@ -25,30 +24,54 @@ class TranscriptionManager: ObservableObject {
         audioEngine = AVAudioEngine()
         inputNode = audioEngine?.inputNode
         
-        let recordingFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: sampleRate,
-            channels: 1,
-            interleaved: false
-        )
+        // Create temporary file URL for recording
+        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
         
-        guard let format = recordingFormat else {
-            print("Error creating audio format")
+        // Get the native format from the input node
+        guard let inputFormat = inputNode?.outputFormat(forBus: 0) else {
+            print("Error getting input format")
+            return
+        }
+        
+        print("Input format: \(inputFormat)")
+        
+        guard let url = tempURL else {
+            print("Error creating temporary file URL")
+            return
+        }
+        
+        // Create audio file
+        do {
+            audioFile = try AVAudioFile(
+                forWriting: url,
+                settings: inputFormat.settings
+            )
+        } catch {
+            print("Error creating audio file: \(error)")
             return
         }
         
         inputNode?.installTap(
             onBus: 0,
-            bufferSize: bufferSize,
-            format: format
+            bufferSize: 4096,  // Increased buffer size for better performance
+            format: inputFormat
         ) { [weak self] buffer, time in
-            self?.processAudioBuffer(buffer)
+            self?.writeBufferToFile(buffer)
+        }
+    }
+    
+    private func writeBufferToFile(_ buffer: AVAudioPCMBuffer) {
+        guard let audioFile = audioFile else { return }
+        
+        do {
+            try audioFile.write(from: buffer)
+        } catch {
+            print("Error writing buffer to file: \(error)")
         }
     }
     
     private func setupWhisperKit() async {
         do {
-            // Initialize WhisperKit with default settings
             whisperKit = try await WhisperKit()
             await MainActor.run {
                 isInitialized = true
@@ -58,29 +81,23 @@ class TranscriptionManager: ObservableObject {
         }
     }
     
-    private func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
-        guard let whisperKit = whisperKit else { return }
-        
-        Task {
-            do {
-                let result = try await whisperKit.transcribe(buffer)
-                await MainActor.run {
-                    self.transcribedText += result + " "
-                }
-            } catch {
-                print("Error transcribing audio: \(error)")
-            }
-        }
-    }
-    
     func startRecording() {
-        guard let audioEngine = audioEngine, isInitialized else { return }
+        guard let audioEngine = audioEngine,
+              let url = tempURL,
+              isInitialized else { return }
         
+        // Reset audio file for new recording
         do {
+            let format = audioEngine.inputNode.outputFormat(forBus: 0)
+            audioFile = try AVAudioFile(
+                forWriting: url,
+                settings: format.settings
+            )
+            
             try audioEngine.start()
             isProcessing = true
         } catch {
-            print("Error starting audio engine: \(error)")
+            print("Error starting recording: \(error)")
         }
     }
     
@@ -88,5 +105,25 @@ class TranscriptionManager: ObservableObject {
         audioEngine?.stop()
         inputNode?.removeTap(onBus: 0)
         isProcessing = false
+        
+        // Transcribe the recorded file
+        Task {
+            await transcribeRecording()
+        }
+    }
+    
+    private func transcribeRecording() async {
+        guard let whisperKit = whisperKit,
+              let url = tempURL else { return }
+        
+        do {
+            if let transcription = try await whisperKit.transcribe(audioPath: url.path)?.text {
+                await MainActor.run {
+                    self.transcribedText += transcription + " "
+                }
+            }
+        } catch {
+            print("Error transcribing audio: \(error)")
+        }
     }
 }

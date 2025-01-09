@@ -8,7 +8,6 @@ struct TranscriptionView: View {
         VStack(spacing: 16) {
             if menuBarManager.isListening {
                 HStack {
-                    ListeningIndicator()
                     Text("Transcribing...")
                         .foregroundColor(.secondary)
                 }
@@ -39,22 +38,3 @@ struct TranscriptionView: View {
         .padding()
     }
 }
-
-//struct ListeningIndicator: View {
-//    @State private var isAnimating = false
-//    
-//    var body: some View {
-//        Circle()
-//            .fill(Color.red)
-//            .frame(width: 10, height: 10)
-//            .opacity(isAnimating ? 0.5 : 1)
-//            .animation(
-//                Animation.easeInOut(duration: 1)
-//                    .repeatForever(),
-//                value: isAnimating
-//            )
-//            .onAppear {
-//                isAnimating = true
-//            }
-//    }
-//}

@@ -8,5 +8,7 @@
 	<string>We need microphone access to transcribe your speech.</string>
 	<key>NSSystemExtensionUsageDescription</key>
 	<string>We need system audio access to transcribe audio from your system.</string>
+    <key>NSAppleMusicUsageDescription</key>
+    <string>We need access to save audio recordings</string>
 </dict>
 </plist>

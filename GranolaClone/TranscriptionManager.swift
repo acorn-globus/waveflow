@@ -27,6 +27,11 @@ class TranscriptionManager: ObservableObject {
         // Create temporary file URL for recording
         tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
         
+        // Print the exact file path for debugging
+        if let url = tempURL {
+            print("Recording will be saved to: \(url.path)")
+        }
+        
         // Get the native format from the input node
         guard let inputFormat = inputNode?.outputFormat(forBus: 0) else {
             print("Error getting input format")
@@ -61,14 +66,24 @@ class TranscriptionManager: ObservableObject {
     }
     
     private func writeBufferToFile(_ buffer: AVAudioPCMBuffer) {
-        guard let audioFile = audioFile else { return }
+        guard let audioFile = audioFile else {
+            print("No audio file available")
+            return
+        }
         
         do {
             try audioFile.write(from: buffer)
+            
+            // Log file size periodically
+            if let url = tempURL {
+                let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
+                print("Current recording file size: \(fileSize) bytes")
+            }
         } catch {
             print("Error writing buffer to file: \(error)")
         }
     }
+
     
     private func setupWhisperKit() async {
         do {
@@ -102,25 +117,52 @@ class TranscriptionManager: ObservableObject {
     }
     
     func stopRecording() {
+        print("Stop recording called")
         audioEngine?.stop()
         inputNode?.removeTap(onBus: 0)
         isProcessing = false
         
         // Transcribe the recorded file
         Task {
+            print("Starting transcription task")
             await transcribeRecording()
+            print("Transcription task completed")
         }
     }
     
     private func transcribeRecording() async {
         guard let whisperKit = whisperKit,
-              let url = tempURL else { return }
+              let url = tempURL else {
+            print("Missing WhisperKit or URL")
+            return
+        }
+        print("Starting transcription")
         
         do {
-            if let transcription = try await whisperKit.transcribe(audioPath: url.path)?.text {
+            // Verify file exists and has content
+            let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
+            print("Attempting to transcribe file at: \(url.path)")
+            print("File size before transcription: \(fileSize) bytes")
+            
+            if fileSize == 0 {
+                print("Warning: File is empty!")
+                return
+            }
+            
+            let results = try await whisperKit.transcribe(
+                 audioPath: url.path,
+                 decodeOptions: .init()
+             )
+            let transcription = results.map { $0.text }.joined(separator: " ")
+            print("Raw transcription results: \(results)")
+            print("Processed transcription: \(transcription)")
+            
+            if !transcription.isEmpty {
                 await MainActor.run {
                     self.transcribedText += transcription + " "
                 }
+            } else {
+                print("Warning: Transcription was empty")
             }
         } catch {
             print("Error transcribing audio: \(error)")

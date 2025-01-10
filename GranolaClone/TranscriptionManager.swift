@@ -7,83 +7,50 @@ class TranscriptionManager: ObservableObject {
     @Published var isProcessing: Bool = false
     @Published var isInitialized: Bool = false
     
-    private var audioEngine: AVAudioEngine?
-    private var audioFile: AVAudioFile?
-    private var inputNode: AVAudioInputNode?
+    private var audioRecorder: AVAudioRecorder?
     private var whisperKit: WhisperKit?
     private var tempURL: URL?
     
     init() {
-        setupAudioEngine()
+        setupRecorder()
         Task {
             await setupWhisperKit()
         }
     }
     
-    private func setupAudioEngine() {
-        audioEngine = AVAudioEngine()
-        inputNode = audioEngine?.inputNode
-        
+    private func setupRecorder() {
         // Create temporary file URL for recording
-        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
+        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.aiff")
         
         // Print the exact file path for debugging
         if let url = tempURL {
             print("Recording will be saved to: \(url.path)")
         }
         
-        // Get the native format from the input node
-        guard let inputFormat = inputNode?.outputFormat(forBus: 0) else {
-            print("Error getting input format")
-            return
-        }
-        
-        print("Input format: \(inputFormat)")
+        // Settings for AIFF format (well-supported on macOS)
+        let settings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: 44100.0,
+            AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ]
         
         guard let url = tempURL else {
             print("Error creating temporary file URL")
             return
         }
         
-        // Create audio file
         do {
-            audioFile = try AVAudioFile(
-                forWriting: url,
-                settings: inputFormat.settings
-            )
+            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
+            audioRecorder?.prepareToRecord()
+            print("Audio recorder setup completed successfully")
         } catch {
-            print("Error creating audio file: \(error)")
-            return
-        }
-        
-        inputNode?.installTap(
-            onBus: 0,
-            bufferSize: 4096,  // Increased buffer size for better performance
-            format: inputFormat
-        ) { [weak self] buffer, time in
-            self?.writeBufferToFile(buffer)
+            print("Error creating audio recorder: \(error)")
         }
     }
-    
-    private func writeBufferToFile(_ buffer: AVAudioPCMBuffer) {
-        guard let audioFile = audioFile else {
-            print("No audio file available")
-            return
-        }
-        
-        do {
-            try audioFile.write(from: buffer)
-            
-            // Log file size periodically
-            if let url = tempURL {
-                let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
-                print("Current recording file size: \(fileSize) bytes")
-            }
-        } catch {
-            print("Error writing buffer to file: \(error)")
-        }
-    }
-
     
     private func setupWhisperKit() async {
         do {
@@ -97,32 +64,35 @@ class TranscriptionManager: ObservableObject {
     }
     
     func startRecording() {
-        guard let audioEngine = audioEngine,
-              let url = tempURL,
-              isInitialized else { return }
+        guard let recorder = audioRecorder,
+              isInitialized else {
+            print("Recorder not ready or not initialized")
+            return
+        }
         
-        // Reset audio file for new recording
-        do {
-            let format = audioEngine.inputNode.outputFormat(forBus: 0)
-            audioFile = try AVAudioFile(
-                forWriting: url,
-                settings: format.settings
-            )
-            
-            try audioEngine.start()
+        if recorder.record() {
             isProcessing = true
-        } catch {
-            print("Error starting recording: \(error)")
+            print("Recording started successfully")
+        } else {
+            print("Failed to start recording")
         }
     }
     
     func stopRecording() {
         print("Stop recording called")
-        audioEngine?.stop()
-        inputNode?.removeTap(onBus: 0)
+        audioRecorder?.stop()
         isProcessing = false
         
-        // Transcribe the recorded file
+        // Print file information for debugging
+        if let url = tempURL {
+            do {
+                let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
+                print("Recording stopped. File size: \(fileSize) bytes")
+            } catch {
+                print("Error getting file size: \(error)")
+            }
+        }
+        
         Task {
             print("Starting transcription task")
             await transcribeRecording()
@@ -139,7 +109,6 @@ class TranscriptionManager: ObservableObject {
         print("Starting transcription")
         
         do {
-            // Verify file exists and has content
             let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
             print("Attempting to transcribe file at: \(url.path)")
             print("File size before transcription: \(fileSize) bytes")
@@ -150,9 +119,9 @@ class TranscriptionManager: ObservableObject {
             }
             
             let results = try await whisperKit.transcribe(
-                 audioPath: url.path,
-                 decodeOptions: .init()
-             )
+                audioPath: url.path,
+                decodeOptions: .init()
+            )
             let transcription = results.map { $0.text }.joined(separator: " ")
             print("Raw transcription results: \(results)")
             print("Processed transcription: \(transcription)")

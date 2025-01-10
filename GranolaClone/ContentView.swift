@@ -18,23 +18,23 @@ struct ContentView: View {
             if menuBarManager.isListening {
                 ListeningIndicator()
             }
-//            if !permissionsManager.microphonePermissionGranted || !permissionsManager.systemAudioPermissionGranted {
-//                Text("Audio Permissions")
-//                    .font(.title)
-//                    .padding()
-//
-//                PermissionSection(
-//                    title: "Microphone Access",
-//                    granted: permissionsManager.microphonePermissionGranted,
-//                    action: permissionsManager.requestMicrophonePermission
-//                )
-//                PermissionSection(
-//                    title: "Screen Recording Access",
-//                    granted: permissionsManager.systemAudioPermissionGranted,
-//                    action: permissionsManager.requestSystemAudioPermission
-//                )
-//            }
-            if !transcriptionManager.isInitialized {
+            if !permissionsManager.microphonePermissionGranted || !permissionsManager.systemAudioPermissionGranted {
+                Text("Audio Permissions")
+                    .font(.title)
+                    .padding()
+
+                PermissionSection(
+                    title: "Microphone Access",
+                    granted: permissionsManager.microphonePermissionGranted,
+                    action: permissionsManager.requestMicrophonePermission
+                )
+                PermissionSection(
+                    title: "Screen Recording Access",
+                    granted: permissionsManager.systemAudioPermissionGranted,
+                    action: permissionsManager.requestSystemAudioPermission
+                )
+            }
+            else if !transcriptionManager.isInitialized {
                 // Show loading view while WhisperKit initializes
                 ProgressView("Initializing WhisperKit...")
                     .progressViewStyle(CircularProgressViewStyle())

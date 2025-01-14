@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 
+@available(macOS 15.0, *)
 struct ContentView: View {
     @EnvironmentObject private var menuBarManager: MenuBarManager
     @EnvironmentObject private var permissionsManager: AudioPermissionsManager
@@ -45,22 +46,18 @@ struct ContentView: View {
         }
         .frame(width: 600, height: 400)
         .onChange(of: menuBarManager.isListening) { _, isListening in
-            print("ContentView menuBarManager.isListening changed to \(isListening)")
             if isListening {
                 print("Starting recording...CV")
                 transcriptionManager.startRecording()
             } else {
-                print("STOP recording...CV")
                 transcriptionManager.stopRecording()
             }
-        }
-        .onAppear {
-            print("ContentView appeared")
-            print("Initial menuBarManager.isListening state: \(menuBarManager.isListening)")
         }
     }
 }
 
 #Preview {
-    ContentView()
+    if #available(macOS 15.0, *) {
+        ContentView()
+    } 
 }

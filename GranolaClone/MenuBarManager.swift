@@ -61,7 +61,6 @@ class MenuBarManager: ObservableObject {
     }
     
     @objc private func toggleListening() {
-        print("Toggle Listening")
         DispatchQueue.main.async {
             self.isListening.toggle()
             self.updateMenuBar()
@@ -69,7 +68,6 @@ class MenuBarManager: ObservableObject {
     }
     
     private func updateMenuBar() {
-        print("Update Menu Bar")
         if let button = statusItem?.button {
             button.image = NSImage(
                 systemSymbolName: isListening ? "mic.fill" : "mic",

@@ -6,6 +6,8 @@
 	<true/>
 	<key>com.apple.security.device.audio-input</key>
 	<true/>
+    <key>com.apple.security.device.audio-output</key>
+    <true/>
 	<key>com.apple.security.files.downloads.read-write</key>
 	<true/>
 	<key>com.apple.security.files.user-selected.read-write</key>
@@ -14,5 +16,15 @@
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
+    <key>com.apple.security.device.bluetooth</key>
+    <true/>
+    <key>com.apple.security.system-audio</key>
+    <true/>
+    <key>com.apple.security.audio-input-capture</key>
+    <true/>
+    <key>com.apple.security.audio-output-capture</key>
+    <true/>
+    <key>com.apple.security.screen-capture</key>
+    <true/>
 </dict>
 </plist>

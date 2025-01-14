@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(macOS 15.0, *)
 struct TranscriptionView: View {
     @ObservedObject var transcriptionManager: TranscriptionManager
     @EnvironmentObject private var menuBarManager: MenuBarManager

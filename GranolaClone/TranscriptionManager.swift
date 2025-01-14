@@ -1,54 +1,92 @@
 import Foundation
 import AVFoundation
 import WhisperKit
+import ScreenCaptureKit
 
+@available(macOS 15.0, *)
 class TranscriptionManager: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isProcessing: Bool = false
     @Published var isInitialized: Bool = false
     
-    private var audioRecorder: AVAudioRecorder?
     private var whisperKit: WhisperKit?
+    private var stream: SCStream?
+    private var streamOutput: CaptureEngineStreamOutput?
+    private let audioSampleBufferQueue = DispatchQueue(label: "audio-sample-buffer-queue")
+    private var audioFile: AVAudioFile?
     private var tempURL: URL?
     
     init() {
-        setupRecorder()
         Task {
             await setupWhisperKit()
+            await setupScreenCapture()
         }
     }
     
-    private func setupRecorder() {
+    private func setupScreenCapture() async {
         // Create temporary file URL for recording
-        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.aiff")
+        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
         
-        // Print the exact file path for debugging
-        if let url = tempURL {
-            print("Recording will be saved to: \(url.path)")
-        }
-        
-        // Settings for AIFF format (well-supported on macOS)
-        let settings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: 44100.0,
-            AVNumberOfChannelsKey: 1,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsFloatKey: false,
-            AVLinearPCMIsBigEndianKey: false,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ]
-        
-        guard let url = tempURL else {
-            print("Error creating temporary file URL")
-            return
+        // Setup stream output handler
+        streamOutput = CaptureEngineStreamOutput { [weak self] sampleBuffer in
+            self?.processAudioBuffer(sampleBuffer)
         }
         
         do {
-            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
-            audioRecorder?.prepareToRecord()
-            print("Audio recorder setup completed successfully")
+            // Get shareable content
+            let content = try await SCShareableContent.current
+            let display = content.displays.first!
+            
+            // Create a filter for audio only
+            let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
+            
+            // Configure stream for audio capture
+            let configuration = SCStreamConfiguration()
+            configuration.capturesAudio = true
+            configuration.excludesCurrentProcessAudio = false  // Include system audio
+            configuration.captureMicrophone = true  // Include microphone
+            
+            // Create and start the stream
+            stream = SCStream(filter: filter, configuration: configuration, delegate: nil)
+            
+            // Add audio outputs
+            try stream?.addStreamOutput(streamOutput!, type: .audio, sampleHandlerQueue: audioSampleBufferQueue)
+            try stream?.addStreamOutput(streamOutput!, type: .microphone, sampleHandlerQueue: audioSampleBufferQueue)
+            
         } catch {
-            print("Error creating audio recorder: \(error)")
+            print("Error setting up screen capture: \(error)")
+        }
+    }
+    
+    private func processAudioBuffer(_ sampleBuffer: CMSampleBuffer) {
+        guard let url = tempURL else { return }
+        
+        // If this is the first buffer, create the audio file
+        if audioFile == nil {
+            guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
+                print("Failed to create audio format")
+                return
+            }
+            
+            do {
+                audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
+            } catch {
+                print("Error creating audio file: \(error)")
+                return
+            }
+        }
+        
+        // Convert CMSampleBuffer to PCM buffer and write to file
+        do {
+            try sampleBuffer.withAudioBufferList { audioBufferList, blockBuffer in
+                guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2),
+                      let pcmBuffer = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: audioBufferList.unsafePointer)
+                else { return }
+                
+                try audioFile?.write(from: pcmBuffer)
+            }
+        } catch {
+            print("Error writing audio buffer: \(error)")
         }
     }
     
@@ -64,34 +102,22 @@ class TranscriptionManager: ObservableObject {
     }
     
     func startRecording() {
-        guard let recorder = audioRecorder,
-              isInitialized else {
-            print("Recorder not ready or not initialized")
+        guard isInitialized else {
+            print("WhisperKit not initialized")
             return
         }
         
-        if recorder.record() {
-            isProcessing = true
-            print("Recording started successfully")
-        } else {
-            print("Failed to start recording")
-        }
+        stream?.startCapture()
+        isProcessing = true
+        print("Recording started successfully")
+
     }
     
     func stopRecording() {
         print("Stop recording called")
-        audioRecorder?.stop()
+        stream?.stopCapture()
+        audioFile = nil  // Close the current audio file
         isProcessing = false
-        
-        // Print file information for debugging
-        if let url = tempURL {
-            do {
-                let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
-                print("Recording stopped. File size: \(fileSize) bytes")
-            } catch {
-                print("Error getting file size: \(error)")
-            }
-        }
         
         Task {
             print("Starting transcription task")
@@ -136,5 +162,20 @@ class TranscriptionManager: ObservableObject {
         } catch {
             print("Error transcribing audio: \(error)")
         }
+    }
+}
+
+// Stream output handler class
+@available(macOS 15.0, *)
+class CaptureEngineStreamOutput: NSObject, SCStreamOutput {
+    var sampleBufferHandler: ((CMSampleBuffer) -> Void)?
+    
+    init(sampleBufferHandler: ((CMSampleBuffer) -> Void)? = nil) {
+        self.sampleBufferHandler = sampleBufferHandler
+    }
+    
+    func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        guard type == .audio || type == .microphone else { return }
+        sampleBufferHandler?(sampleBuffer)
     }
 }

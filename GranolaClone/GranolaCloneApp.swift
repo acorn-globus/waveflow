@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import AVFoundation
 
+@available(macOS 15.0, *)
 @main
 struct GranolaCloneApp: App {
     @StateObject private var menuBarManager = MenuBarManager()

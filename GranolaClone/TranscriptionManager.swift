@@ -19,12 +19,9 @@ class TranscriptionManager: ObservableObject {
     private var streamOutput: ScreenCaptureStreamOutput?
     private let audioSampleBufferQueue = DispatchQueue(label: "audio-sample-buffer-queue")
     private let micSampleBufferQueue = DispatchQueue(label: "mic-sample-buffer-queue")
-    private var audioFile: AVAudioFile?
-    private var tempURL: URL?
-    private var systemFormat: AVAudioFormat?
-    private var micFormat: AVAudioFormat?
-    private var recordingConfiguration: SCRecordingOutputConfiguration?
-    
+    private var recordingOutput: SCRecordingOutput?
+    private var recordingDelegate: RecordingDelegate?
+    private var recordingURL: URL?
     
     init() {
         Task {
@@ -34,60 +31,8 @@ class TranscriptionManager: ObservableObject {
     }
     
     private func setupScreenCapture() async {
-        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
-        
-        streamOutput = ScreenCaptureStreamOutput(
-            audioSampleHandler: { pcmBuffer in
-                // Handle system audio samples here
-                guard let url = self.tempURL else { return }
-                print("Received audio samples")
-                
-                if self.audioFile == nil {
-                    guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
-                        print("Failed to create audio format")
-                        return
-                    }
-                            
-                    do {
-                        self.audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
-                    } catch {
-                        print("Error creating audio file: \(error)")
-                        return
-                    }
-                }
-
-                do {
-                    try self.audioFile?.write(from: pcmBuffer)
-                } catch {
-                    print("Error writing audio buffer: \(error)")
-                }
-            },
-            microphoneHandler: { pcmBuffer in
-                // Handle microphone audio samples here
-                guard let url = self.tempURL else { return }
-                print("Received microphone input")
-                
-                if self.audioFile == nil {
-                    guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
-                        print("Failed to create audio format")
-                        return
-                    }
-                            
-                    do {
-                        self.audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
-                    } catch {
-                        print("Error creating audio file: \(error)")
-                        return
-                    }
-                }
-
-                do {
-                    try self.audioFile?.write(from: pcmBuffer)
-                } catch {
-                    print("Error writing audio buffer: \(error)")
-                }
-            }
-        )
+        recordingURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.mov")
+        streamOutput = ScreenCaptureStreamOutput()
         
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -96,32 +41,29 @@ class TranscriptionManager: ObservableObject {
             let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
             
             let configuration = SCStreamConfiguration()
-            
             configuration.capturesAudio = true
             configuration.excludesCurrentProcessAudio = false
             configuration.captureMicrophone = true
             configuration.microphoneCaptureDeviceID = AVCaptureDevice.default(for: .audio)?.uniqueID
             configuration.queueDepth = 5
-
-            // Set up audio configuration
             configuration.sampleRate = 48000
             configuration.channelCount = 2
             
-            stream = SCStream(filter: filter, configuration: configuration, delegate: streamOutput! as? SCStreamDelegate)
+            stream = SCStream(filter: filter, configuration: configuration, delegate: streamOutput)
             
             try stream?.addStreamOutput(streamOutput!, type: .audio, sampleHandlerQueue: audioSampleBufferQueue)
             try stream?.addStreamOutput(streamOutput!, type: .microphone, sampleHandlerQueue: micSampleBufferQueue)
             
+            // Set up recording configuration
+            let recordingConfig = SCRecordingOutputConfiguration()
+            recordingConfig.outputURL = recordingURL!
+            recordingConfig.outputFileType = .mov
             
-            let recordingURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording_2.mov")
-            recordingConfiguration = SCRecordingOutputConfiguration()
-            recordingConfiguration?.outputURL = recordingURL
-            recordingConfiguration?.outputFileType = .mov
-
-            let recordingDelegate = RecordingOutput()
-            let recordingOutput = SCRecordingOutput(configuration: recordingConfiguration!, delegate: recordingDelegate)
-
-            try stream?.addRecordingOutput(recordingOutput)
+            // Create recording delegate and output
+            recordingDelegate = RecordingDelegate()
+            recordingOutput = SCRecordingOutput(configuration: recordingConfig, delegate: recordingDelegate!)
+            
+            try stream?.addRecordingOutput(recordingOutput!)
             
             print("Screen capture setup completed successfully")
         } catch {
@@ -147,12 +89,9 @@ class TranscriptionManager: ObservableObject {
         }
         
         // Delete existing recording if any
-        if let url = tempURL {
+        if let url = recordingURL {
             try? FileManager.default.removeItem(at: url)
         }
-        
-        // Reset audio file
-        audioFile = nil
         
         stream?.startCapture()
         isProcessing = true
@@ -162,7 +101,6 @@ class TranscriptionManager: ObservableObject {
     func stopRecording() {
         print("Stop recording called")
         stream?.stopCapture()
-        audioFile = nil
         isProcessing = false
         
         Task {
@@ -172,17 +110,43 @@ class TranscriptionManager: ObservableObject {
         }
     }
     
+    private func convertMovToWav(inputURL: URL) async throws -> URL {
+        let wavURL = FileManager.default.temporaryDirectory.appendingPathComponent("converted_audio.wav")
+        
+        // Delete existing WAV file if any
+        try? FileManager.default.removeItem(at: wavURL)
+        
+        let asset = AVAsset(url: inputURL)
+        let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A)!
+        
+        exportSession.outputURL = wavURL
+        exportSession.outputFileType = .wav
+        exportSession.shouldOptimizeForNetworkUse = true
+        
+        await exportSession.export()
+        
+        guard exportSession.status == .completed else {
+            throw NSError(domain: "TranscriptionManager",
+                         code: -1,
+                         userInfo: [NSLocalizedDescriptionKey: "Failed to convert MOV to WAV"])
+        }
+        
+        return wavURL
+    }
+    
     private func transcribeRecording() async {
         guard let whisperKit = whisperKit,
-              let url = tempURL else {
-            print("Missing WhisperKit or URL")
+              let movURL = recordingURL else {
+            print("Missing WhisperKit or recording URL")
             return
         }
-        print("Starting transcription")
         
         do {
-            let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
-            print("Attempting to transcribe file at: \(url.path)")
+            print("Converting MOV to WAV")
+            let wavURL = try await convertMovToWav(inputURL: movURL)
+            
+            let fileSize = try FileManager.default.attributesOfItem(atPath: wavURL.path)[.size] as? UInt64 ?? 0
+            print("Attempting to transcribe WAV file at: \(wavURL.path)")
             print("File size before transcription: \(fileSize) bytes")
             
             if fileSize == 0 {
@@ -191,9 +155,10 @@ class TranscriptionManager: ObservableObject {
             }
             
             let results = try await whisperKit.transcribe(
-                audioPath: url.path,
+                audioPath: wavURL.path,
                 decodeOptions: .init()
             )
+            
             let transcription = results.map { $0.text }.joined(separator: " ")
             print("Raw transcription results: \(results)")
             print("Processed transcription: \(transcription)")
@@ -205,76 +170,29 @@ class TranscriptionManager: ObservableObject {
             } else {
                 print("Warning: Transcription was empty")
             }
+            
+            // Clean up temporary WAV file
+            try? FileManager.default.removeItem(at: wavURL)
+            
         } catch {
-            print("Error transcribing audio: \(error)")
+            print("Error in transcription process: \(error)")
         }
     }
-    
-    
 }
 
-class RecordingOutput: NSObject, SCRecordingOutputDelegate {
+class RecordingDelegate: NSObject, SCRecordingOutputDelegate {
     override init() {
         super.init()
     }
 }
 
 @available(macOS 15.0, *)
-class ScreenCaptureStreamOutput: NSObject, SCStreamOutput {
-    // Closure types for handling different output types
-    typealias AudioSampleHandler = (AVAudioPCMBuffer) -> Void
-    typealias MicrophoneHandler = (AVAudioPCMBuffer) -> Void
-    
-    // Handlers for different types of output
-    private var audioSampleHandler: AudioSampleHandler?
-    private var microphoneHandler: MicrophoneHandler?
-    
-    init(audioSampleHandler: AudioSampleHandler? = nil,
-         microphoneHandler: MicrophoneHandler? = nil) {
-        self.audioSampleHandler = audioSampleHandler
-        self.microphoneHandler = microphoneHandler
-        super.init()
+class ScreenCaptureStreamOutput: NSObject, SCStreamOutput, SCStreamDelegate {
+    func stream(_ stream: SCStream, didStopWithError error: Error) {
+        print("Stream stopped with error: \(error)")
     }
     
-    // SCStreamOutput protocol implementation
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of outputType: SCStreamOutputType) {
-        guard sampleBuffer.isValid else { return }
-        
-        switch outputType {
-        case .audio:
-            handleAudio(for: sampleBuffer)
-        case .microphone:
-            handleMicrophone(for: sampleBuffer)
-        case .screen:
-            break
-        @unknown default:
-            break
-        }
-    }
-    
-    // Process audio sample buffers
-    private func handleAudio(for buffer: CMSampleBuffer) {
-        processAudioBuffer(buffer, handler: audioSampleHandler)
-    }
-    
-    private func handleMicrophone(for buffer: CMSampleBuffer) {
-        processAudioBuffer(buffer, handler: microphoneHandler)
-    }
-    
-    private func processAudioBuffer(_ buffer: CMSampleBuffer, handler: ((AVAudioPCMBuffer) -> Void)?) {
-        do {
-            try buffer.withAudioBufferList { audioBufferList, blockBuffer in
-                guard let description = buffer.formatDescription?.audioStreamBasicDescription,
-                      let format = AVAudioFormat(standardFormatWithSampleRate: description.mSampleRate,
-                                               channels: description.mChannelsPerFrame),
-                      let samples = AVAudioPCMBuffer(pcmFormat: format,
-                                                   bufferListNoCopy: audioBufferList.unsafePointer)
-                else { return }
-                
-                handler?(samples)
-            }
-        } catch {
-            print("Error processing audio buffer: \(error)")
-        }
+        // We don't need to handle the audio buffers manually anymore since we're using SCRecordingOutput
     }
 }

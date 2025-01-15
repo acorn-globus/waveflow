@@ -8,6 +8,9 @@ class TranscriptionManager: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isProcessing: Bool = false
     @Published var isInitialized: Bool = false
+    @Published var availableMicrophones: [AVCaptureDevice] = []
+    @Published var selectedMicrophoneID: String? = nil
+    @Published var microphoneLevel: Float = 0.0
     
     private var whisperKit: WhisperKit?
     private var stream: SCStream?
@@ -26,6 +29,23 @@ class TranscriptionManager: ObservableObject {
     }
     
     private func setupScreenCapture() async {
+        // Get available microphones
+        let devices = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.microphone],
+            mediaType: .audio,
+            position: .unspecified
+        ).devices
+        
+        await MainActor.run {
+            self.availableMicrophones = devices
+            // Select the default microphone if available and not already selected
+            if selectedMicrophoneID == nil {
+                self.selectedMicrophoneID = devices.first?.uniqueID
+            }
+        }
+        
+        print("Available microphones: \(devices.map { "\($0.localizedName): \($0.uniqueID)" })")
+        
         tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
         
         streamOutput = CaptureEngineStreamOutput { [weak self] sampleBuffer, type in
@@ -42,9 +62,14 @@ class TranscriptionManager: ObservableObject {
             configuration.capturesAudio = true
             configuration.captureMicrophone = true
             
+            // Set the selected microphone device ID
+            if let micID = selectedMicrophoneID {
+                configuration.microphoneCaptureDeviceID = micID
+                print("Configured microphone with ID: \(micID)")
+            }
+            
             // Set up audio configuration
             configuration.sampleRate = 48000
-            // System audio is typically stereo
             configuration.channelCount = 2
             
             stream = SCStream(filter: filter, configuration: configuration, delegate: streamOutput!)
@@ -77,6 +102,8 @@ class TranscriptionManager: ObservableObject {
     }
     
     private func processAudioBuffer(_ sampleBuffer: CMSampleBuffer, type: SCStreamOutputType) {
+        print("Processing \(type) buffer with \(CMSampleBufferGetNumSamples(sampleBuffer)) samples")
+        
         guard let url = tempURL else { return }
         
         // Initialize audio file if needed
@@ -90,8 +117,10 @@ class TranscriptionManager: ObservableObject {
             
             if type == .audio {
                 systemFormat = format
+                print("System audio format created: \(format)")
             } else {
                 micFormat = format
+                print("Microphone format created: \(format)")
             }
             
             do {
@@ -99,7 +128,7 @@ class TranscriptionManager: ObservableObject {
                 let settings: [String: Any] = [
                     AVFormatIDKey: kAudioFormatLinearPCM,
                     AVSampleRateKey: format.sampleRate,
-                    AVNumberOfChannelsKey: 2, // Always use 2 channels for the output file
+                    AVNumberOfChannelsKey: 2,
                     AVLinearPCMBitDepthKey: 32,
                     AVLinearPCMIsFloatKey: true,
                     AVLinearPCMIsNonInterleaved: true
@@ -121,12 +150,13 @@ class TranscriptionManager: ObservableObject {
                       let pcmBuffer = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: audioBufferList.unsafePointer)
                 else { return }
                 
-                // If it's microphone input (mono), convert to stereo before writing
                 if type == .microphone {
                     guard let stereoBuffer = convertMonoToStereo(pcmBuffer) else { return }
                     try audioFile?.write(from: stereoBuffer)
+                    print("Wrote microphone buffer with \(stereoBuffer.frameLength) frames")
                 } else {
                     try audioFile?.write(from: pcmBuffer)
+                    print("Wrote system audio buffer with \(pcmBuffer.frameLength) frames")
                 }
             }
         } catch {
@@ -205,6 +235,13 @@ class TranscriptionManager: ObservableObject {
         }
     }
     
+    func selectMicrophone(withID id: String) async {
+        print("Selecting microphone with ID: \(id)")
+        selectedMicrophoneID = id
+        // Recreate the stream with the new microphone
+        await setupScreenCapture()
+    }
+    
     private func transcribeRecording() async {
         guard let whisperKit = whisperKit,
               let url = tempURL else {
@@ -242,6 +279,8 @@ class TranscriptionManager: ObservableObject {
             print("Error transcribing audio: \(error)")
         }
     }
+    
+    
 }
 
 @available(macOS 15.0, *)
@@ -256,5 +295,10 @@ class CaptureEngineStreamOutput: NSObject, SCStreamOutput, SCStreamDelegate {
         guard type == .audio || type == .microphone else { return }
         sampleBufferHandler?(sampleBuffer, type)
     }
+    
+    func stream(_ stream: SCStream, didStopWithError error: Error) {
+        print("Stream stopped with error: \(error)")
+    }
 }
+
 

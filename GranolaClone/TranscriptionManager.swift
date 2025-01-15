@@ -15,6 +15,8 @@ class TranscriptionManager: ObservableObject {
     private let audioSampleBufferQueue = DispatchQueue(label: "audio-sample-buffer-queue")
     private var audioFile: AVAudioFile?
     private var tempURL: URL?
+    private var systemFormat: AVAudioFormat?
+    private var micFormat: AVAudioFormat?
     
     init() {
         Task {
@@ -24,70 +26,140 @@ class TranscriptionManager: ObservableObject {
     }
     
     private func setupScreenCapture() async {
-        // Create temporary file URL for recording
         tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
         
-        // Setup stream output handler
-        streamOutput = CaptureEngineStreamOutput { [weak self] sampleBuffer in
-            self?.processAudioBuffer(sampleBuffer)
+        streamOutput = CaptureEngineStreamOutput { [weak self] sampleBuffer, type in
+            self?.processAudioBuffer(sampleBuffer, type: type)
         }
         
         do {
-            // Get shareable content
-            let content = try await SCShareableContent.current
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
             let display = content.displays.first!
             
-            // Create a filter for audio only
             let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
             
-            // Configure stream for audio capture
             let configuration = SCStreamConfiguration()
             configuration.capturesAudio = true
-            configuration.excludesCurrentProcessAudio = false  // Include system audio
-            configuration.captureMicrophone = true  // Include microphone
+            configuration.captureMicrophone = true
             
-            // Create and start the stream
-            stream = SCStream(filter: filter, configuration: configuration, delegate: nil)
+            // Set up audio configuration
+            configuration.sampleRate = 48000
+            // System audio is typically stereo
+            configuration.channelCount = 2
             
-            // Add audio outputs
+            stream = SCStream(filter: filter, configuration: configuration, delegate: streamOutput!)
+            
             try stream?.addStreamOutput(streamOutput!, type: .audio, sampleHandlerQueue: audioSampleBufferQueue)
             try stream?.addStreamOutput(streamOutput!, type: .microphone, sampleHandlerQueue: audioSampleBufferQueue)
             
+            print("Screen capture setup completed successfully")
         } catch {
             print("Error setting up screen capture: \(error)")
         }
     }
     
-    private func processAudioBuffer(_ sampleBuffer: CMSampleBuffer) {
+    private func createAudioFormat(for sampleBuffer: CMSampleBuffer, type: SCStreamOutputType) -> AVAudioFormat? {
+        guard let formatDescription = sampleBuffer.formatDescription,
+              let streamBasicDescription = formatDescription.audioStreamBasicDescription else {
+            print("Failed to get audio format description")
+            return nil
+        }
+        
+        // Create format based on the type
+        let channelCount: AVAudioChannelCount = (type == .audio) ? 2 : 1
+        
+        return AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: streamBasicDescription.mSampleRate,
+            channels: channelCount,
+            interleaved: false
+        )
+    }
+    
+    private func processAudioBuffer(_ sampleBuffer: CMSampleBuffer, type: SCStreamOutputType) {
         guard let url = tempURL else { return }
         
-        // If this is the first buffer, create the audio file
+        // Initialize audio file if needed
         if audioFile == nil {
-            guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
+            // Create format based on the first received buffer
+            let format = createAudioFormat(for: sampleBuffer, type: type)
+            guard let format = format else {
                 print("Failed to create audio format")
                 return
             }
             
+            if type == .audio {
+                systemFormat = format
+            } else {
+                micFormat = format
+            }
+            
             do {
-                audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
+                // Create audio file with explicit settings for mixed audio
+                let settings: [String: Any] = [
+                    AVFormatIDKey: kAudioFormatLinearPCM,
+                    AVSampleRateKey: format.sampleRate,
+                    AVNumberOfChannelsKey: 2, // Always use 2 channels for the output file
+                    AVLinearPCMBitDepthKey: 32,
+                    AVLinearPCMIsFloatKey: true,
+                    AVLinearPCMIsNonInterleaved: true
+                ]
+                
+                audioFile = try AVAudioFile(forWriting: url, settings: settings)
+                print("Created audio file with format: \(format)")
             } catch {
                 print("Error creating audio file: \(error)")
                 return
             }
         }
         
-        // Convert CMSampleBuffer to PCM buffer and write to file
+        // Convert and write buffer
         do {
             try sampleBuffer.withAudioBufferList { audioBufferList, blockBuffer in
-                guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2),
+                let format = (type == .audio) ? systemFormat : micFormat
+                guard let format = format,
                       let pcmBuffer = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: audioBufferList.unsafePointer)
                 else { return }
                 
-                try audioFile?.write(from: pcmBuffer)
+                // If it's microphone input (mono), convert to stereo before writing
+                if type == .microphone {
+                    guard let stereoBuffer = convertMonoToStereo(pcmBuffer) else { return }
+                    try audioFile?.write(from: stereoBuffer)
+                } else {
+                    try audioFile?.write(from: pcmBuffer)
+                }
             }
         } catch {
-            print("Error writing audio buffer: \(error)")
+            print("Error writing audio buffer: \(error), type: \(type)")
         }
+    }
+    
+    private func convertMonoToStereo(_ monoBuffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let stereoFormat = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: monoBuffer.format.sampleRate,
+            channels: 2,
+            interleaved: false
+        ),
+        let stereoBuffer = AVAudioPCMBuffer(
+            pcmFormat: stereoFormat,
+            frameCapacity: monoBuffer.frameLength
+        ) else {
+            return nil
+        }
+        
+        // Copy mono data to both channels of stereo buffer
+        let monoData = monoBuffer.floatChannelData?[0]
+        let leftData = stereoBuffer.floatChannelData?[0]
+        let rightData = stereoBuffer.floatChannelData?[1]
+        
+        for frame in 0..<Int(monoBuffer.frameLength) {
+            leftData?[frame] = monoData?[frame] ?? 0
+            rightData?[frame] = monoData?[frame] ?? 0
+        }
+        
+        stereoBuffer.frameLength = monoBuffer.frameLength
+        return stereoBuffer
     }
     
     private func setupWhisperKit() async {
@@ -107,16 +179,23 @@ class TranscriptionManager: ObservableObject {
             return
         }
         
+        // Delete existing recording if any
+        if let url = tempURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        
+        // Reset audio file
+        audioFile = nil
+        
         stream?.startCapture()
         isProcessing = true
         print("Recording started successfully")
-
     }
     
     func stopRecording() {
         print("Stop recording called")
         stream?.stopCapture()
-        audioFile = nil  // Close the current audio file
+        audioFile = nil
         isProcessing = false
         
         Task {
@@ -165,17 +244,17 @@ class TranscriptionManager: ObservableObject {
     }
 }
 
-// Stream output handler class
 @available(macOS 15.0, *)
-class CaptureEngineStreamOutput: NSObject, SCStreamOutput {
-    var sampleBufferHandler: ((CMSampleBuffer) -> Void)?
+class CaptureEngineStreamOutput: NSObject, SCStreamOutput, SCStreamDelegate {
+    var sampleBufferHandler: ((CMSampleBuffer, SCStreamOutputType) -> Void)?
     
-    init(sampleBufferHandler: ((CMSampleBuffer) -> Void)? = nil) {
+    init(sampleBufferHandler: ((CMSampleBuffer, SCStreamOutputType) -> Void)? = nil) {
         self.sampleBufferHandler = sampleBufferHandler
     }
     
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .audio || type == .microphone else { return }
-        sampleBufferHandler?(sampleBuffer)
+        sampleBufferHandler?(sampleBuffer, type)
     }
 }
+

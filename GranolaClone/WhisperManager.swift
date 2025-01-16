@@ -2,34 +2,63 @@ import Foundation
 import WhisperKit
 import Combine
 import AVFoundation
+import ScreenCaptureKit
 
 @MainActor
 class WhisperManager: ObservableObject {
     @Published var isModelLoaded = false
     @Published var isRecording = false
-    @Published var confirmedText = ""
-    @Published var hypothesisText = ""
     @Published var downloadProgress: Float = 0.0
     @Published var modelState: ModelState = .unloaded
     
-    private var whisperKit: WhisperKit?
-    private var transcriptionTask: Task<Void, Never>?
-    private var lastBufferSize = 0
-    private var lastAgreedSeconds: Float = 0.0
-    private var prevResult: TranscriptionResult?
-    private var prevWords: [WordTiming] = []
-    private var lastAgreedWords: [WordTiming] = []
-    private var confirmedWords: [WordTiming] = []
-    private var hypothesisWords: [WordTiming] = []
-    private let tokenConfirmationsNeeded: Int = 2
+    // Microphone transcription
+    @Published var micConfirmedText = ""
+    @Published var micHypothesisText = ""
     
+    // System audio transcription
+    @Published var systemConfirmedText = ""
+    @Published var systemHypothesisText = ""
+    
+    private var whisperKit: WhisperKit?
+    private var micTranscriptionTask: Task<Void, Never>?
+    private var systemTranscriptionTask: Task<Void, Never>?
+    
+    // Screen capture properties
+    private var streamConfig: SCStreamConfiguration?
+    private var stream: SCStream?
+    private var systemAudioProcessor: SystemAudioProcessor?
+    
+    // Microphone state
+    private var micLastBufferSize = 0
+    private var micLastAgreedSeconds: Float = 0.0
+    private var micPrevResult: TranscriptionResult?
+    private var micPrevWords: [WordTiming] = []
+    private var micLastAgreedWords: [WordTiming] = []
+    private var micConfirmedWords: [WordTiming] = []
+    private var micHypothesisWords: [WordTiming] = []
+    
+    // System audio state
+    private var systemLastBufferSize = 0
+    private var systemLastAgreedSeconds: Float = 0.0
+    private var systemPrevResult: TranscriptionResult?
+    private var systemPrevWords: [WordTiming] = []
+    private var systemLastAgreedWords: [WordTiming] = []
+    private var systemConfirmedWords: [WordTiming] = []
+    private var systemHypothesisWords: [WordTiming] = []
+    
+    private let tokenConfirmationsNeeded: Int = 2
     private let modelName = "whisper-large-v3"
     private let repoName = "argmaxinc/whisperkit-coreml"
     
     init() {
         Task {
             await loadModel()
+            setupSystemAudioProcessor()
         }
+    }
+    
+    private func setupSystemAudioProcessor() {
+        systemAudioProcessor = SystemAudioProcessor()
     }
     
     private func loadModel() async {
@@ -44,7 +73,6 @@ class WhisperManager: ObservableObject {
             
             guard let whisperKit = whisperKit else { return }
             
-            // Download model if needed
             let folder = try await WhisperKit.download(
                 variant: modelName,
                 from: repoName,
@@ -59,7 +87,6 @@ class WhisperManager: ObservableObject {
             modelState = .downloaded
             whisperKit.modelFolder = folder
             
-            // Prewarm and load models
             try await whisperKit.prewarmModels()
             try await whisperKit.loadModels()
             
@@ -81,8 +108,41 @@ class WhisperManager: ObservableObject {
         }
     }
     
+    private func resetState() {
+        // Reset microphone state
+        micLastBufferSize = 0
+        micLastAgreedSeconds = 0.0
+        micPrevResult = nil
+        micPrevWords = []
+        micLastAgreedWords = []
+        micConfirmedWords = []
+        micHypothesisWords = []
+        micConfirmedText = ""
+        micHypothesisText = ""
+        
+        // Reset system audio state
+        systemLastBufferSize = 0
+        systemLastAgreedSeconds = 0.0
+        systemPrevResult = nil
+        systemPrevWords = []
+        systemLastAgreedWords = []
+        systemConfirmedWords = []
+        systemHypothesisWords = []
+        systemConfirmedText = ""
+        systemHypothesisText = ""
+    }
+    
     private func startRecording() {
         resetState()
+        
+        // Start microphone recording
+        startMicrophoneRecording()
+        
+        // Start system audio recording
+        startSystemAudioRecording()
+    }
+    
+    private func startMicrophoneRecording() {
         guard let audioProcessor = whisperKit?.audioProcessor else { return }
         
         Task(priority: .userInitiated) {
@@ -92,31 +152,41 @@ class WhisperManager: ObservableObject {
             }
             
             try? audioProcessor.startRecordingLive { _ in }
-            transcriptionTask = Task { [weak self] in
+            micTranscriptionTask = Task { [weak self] in
                 while self?.isRecording == true {
-                    try? await self?.transcribeCurrentBuffer()
+                    try? await self?.transcribeMicrophoneBuffer()
                     try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
                 }
             }
         }
     }
     
-    private func resetState() {
-        lastBufferSize = 0
-        lastAgreedSeconds = 0.0
-        prevResult = nil
-        prevWords = []
-        lastAgreedWords = []
-        confirmedWords = []
-        hypothesisWords = []
-        confirmedText = ""
-        hypothesisText = ""
+    private func startSystemAudioRecording() {
+        Task {
+            do {
+                try await systemAudioProcessor?.startRecording()
+                systemTranscriptionTask = Task { [weak self] in
+                    while self?.isRecording == true {
+                        try? await self?.transcribeSystemBuffer()
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
+                    }
+                }
+            } catch {
+                print("Error starting system audio recording: \(error)")
+            }
+        }
     }
     
     private func stopRecording() {
+        // Stop microphone recording
         whisperKit?.audioProcessor.stopRecording()
-        transcriptionTask?.cancel()
-        transcriptionTask = nil
+        micTranscriptionTask?.cancel()
+        micTranscriptionTask = nil
+        
+        // Stop system audio recording
+        systemAudioProcessor?.stopRecording()
+        systemTranscriptionTask?.cancel()
+        systemTranscriptionTask = nil
     }
     
     private func findLongestCommonPrefix(_ a: [WordTiming], _ b: [WordTiming]) -> [WordTiming] {
@@ -138,20 +208,19 @@ class WhisperManager: ObservableObject {
         let commonPrefix = findLongestCommonPrefix(a, b)
         return Array(b.dropFirst(commonPrefix.count))
     }
-
-    private func transcribeCurrentBuffer() async throws {
+    
+    private func transcribeMicrophoneBuffer() async throws {
         guard let whisperKit = whisperKit else { return }
         
         let currentBuffer = whisperKit.audioProcessor.audioSamples
-        let nextBufferSize = currentBuffer.count - lastBufferSize
+        let nextBufferSize = currentBuffer.count - micLastBufferSize
         let nextBufferSeconds = Float(nextBufferSize) / Float(WhisperKit.sampleRate)
         
-        // Only transcribe if we have at least 1 second of new audio
         guard nextBufferSeconds > 1 else { return }
         
-        lastBufferSize = currentBuffer.count
+        micLastBufferSize = currentBuffer.count
         
-        print("Transcribing \(lastAgreedSeconds)-\(Double(currentBuffer.count)/16000.0) seconds")
+        print("Transcribing mic \(micLastAgreedSeconds)-\(Double(currentBuffer.count)/16000.0) seconds")
         
         let options = DecodingOptions(
             verbose: false,
@@ -163,7 +232,7 @@ class WhisperManager: ObservableObject {
             skipSpecialTokens: true,
             withoutTimestamps: true,
             wordTimestamps: true,
-            clipTimestamps: [lastAgreedSeconds]
+            clipTimestamps: [micLastAgreedSeconds]
         )
         
         if let transcription: TranscriptionResult = try await whisperKit.transcribe(
@@ -171,35 +240,84 @@ class WhisperManager: ObservableObject {
             decodeOptions: options
         ) {
             await MainActor.run {
-                hypothesisWords = transcription.allWords.filter { $0.start >= lastAgreedSeconds }
+                micHypothesisWords = transcription.allWords.filter { $0.start >= micLastAgreedSeconds }
                 
-                if let prevResult = prevResult {
-                    prevWords = prevResult.allWords.filter { $0.start >= lastAgreedSeconds }
-                    let commonPrefix = findLongestCommonPrefix(prevWords, hypothesisWords)
-                    
-                    print("Prev: \((prevWords.map { $0.word }).joined())")
-                    print("Next: \((hypothesisWords.map { $0.word }).joined())")
-                    print("Common prefix: \((commonPrefix.map { $0.word }).joined())")
+                if let prevResult = micPrevResult {
+                    micPrevWords = prevResult.allWords.filter { $0.start >= micLastAgreedSeconds }
+                    let commonPrefix = findLongestCommonPrefix(micPrevWords, micHypothesisWords)
                     
                     if commonPrefix.count >= tokenConfirmationsNeeded {
-                        lastAgreedWords = Array(commonPrefix.suffix(tokenConfirmationsNeeded))
-                        lastAgreedSeconds = lastAgreedWords.first?.start ?? lastAgreedSeconds
-                        print("New last agreed word '\(lastAgreedWords.first?.word ?? "")' at \(lastAgreedSeconds) seconds")
-                        
-                        confirmedWords.append(contentsOf: commonPrefix.prefix(commonPrefix.count - tokenConfirmationsNeeded))
-                    } else {
-                        print("Using same last agreed time \(lastAgreedSeconds)")
+                        micLastAgreedWords = Array(commonPrefix.suffix(tokenConfirmationsNeeded))
+                        micLastAgreedSeconds = micLastAgreedWords.first?.start ?? micLastAgreedSeconds
+                        micConfirmedWords.append(contentsOf: commonPrefix.prefix(commonPrefix.count - tokenConfirmationsNeeded))
                     }
                 }
                 
-                prevResult = transcription
+                micPrevResult = transcription
                 
                 // Update the displayed text
-                confirmedText = confirmedWords.map { $0.word }.joined()
+                micConfirmedText = micConfirmedWords.map { $0.word }.joined()
                 
-                // Get the latest hypothesis by combining last agreed words with the different suffix
-                let lastHypothesis = lastAgreedWords + findLongestDifferentSuffix(prevWords, hypothesisWords)
-                hypothesisText = lastHypothesis.map { $0.word }.joined()
+                // Get the latest hypothesis
+                let lastHypothesis = micLastAgreedWords + findLongestDifferentSuffix(micPrevWords, micHypothesisWords)
+                micHypothesisText = lastHypothesis.map { $0.word }.joined()
+            }
+        }
+    }
+    
+    private func transcribeSystemBuffer() async throws {
+        print("---------------------TRANSCRIBING SYSTEM BUFFER-----------------------")
+        guard let whisperKit = whisperKit,
+              let systemBuffer = systemAudioProcessor?.audioSamples else { return }
+        
+        let nextBufferSize = systemBuffer.count - systemLastBufferSize
+        let nextBufferSeconds = Float(nextBufferSize) / Float(WhisperKit.sampleRate)
+        
+        guard nextBufferSeconds > 1 else { return }
+        
+        systemLastBufferSize = systemBuffer.count
+        
+        print("Transcribing system \(systemLastAgreedSeconds)-\(Double(systemBuffer.count)/16000.0) seconds")
+        
+        let options = DecodingOptions(
+            verbose: false,
+            task: .transcribe,
+            language: "en",
+            temperature: 0,
+            sampleLength: 224,
+            usePrefillPrompt: true,
+            skipSpecialTokens: true,
+            withoutTimestamps: true,
+            wordTimestamps: true,
+            clipTimestamps: [systemLastAgreedSeconds]
+        )
+        
+        if let transcription: TranscriptionResult = try await whisperKit.transcribe(
+            audioArray: Array(systemBuffer),
+            decodeOptions: options
+        ) {
+            await MainActor.run {
+                systemHypothesisWords = transcription.allWords.filter { $0.start >= systemLastAgreedSeconds }
+                
+                if let prevResult = systemPrevResult {
+                    systemPrevWords = prevResult.allWords.filter { $0.start >= systemLastAgreedSeconds }
+                    let commonPrefix = findLongestCommonPrefix(systemPrevWords, systemHypothesisWords)
+                    
+                    if commonPrefix.count >= tokenConfirmationsNeeded {
+                        systemLastAgreedWords = Array(commonPrefix.suffix(tokenConfirmationsNeeded))
+                        systemLastAgreedSeconds = systemLastAgreedWords.first?.start ?? systemLastAgreedSeconds
+                        systemConfirmedWords.append(contentsOf: commonPrefix.prefix(commonPrefix.count - tokenConfirmationsNeeded))
+                    }
+                }
+                
+                systemPrevResult = transcription
+                
+                // Update the displayed text
+                systemConfirmedText = systemConfirmedWords.map { $0.word }.joined()
+                
+                // Get the latest hypothesis
+                let lastHypothesis = systemLastAgreedWords + findLongestDifferentSuffix(systemPrevWords, systemHypothesisWords)
+                systemHypothesisText = lastHypothesis.map { $0.word }.joined()
             }
         }
     }

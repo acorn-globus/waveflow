@@ -31,20 +31,57 @@ struct WhisperStreamView: View {
     
     private var transcriptionView: some View {
         VStack(spacing: 20) {
-            ScrollView {
-                VStack(spacing: 16) {
-                    Text(manager.confirmedText)
-                        .fontWeight(.bold)
-                    Text("\(manager.hypothesisText)")
-                        .foregroundColor(.gray)
+            HStack(spacing: 20) {
+                // Microphone Transcription
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "mic.fill")
+                        Text("Microphone")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.blue)
+                    
+                    ScrollView {
+                        HStack(alignment: .top, spacing: 0) {
+                            Text(manager.micConfirmedText)
+                                .fontWeight(.bold)
+                            + Text(manager.micHypothesisText)
+                                .foregroundColor(.gray)
+                        }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                }.padding()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 300)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(12)
+                }
+                
+                // System Audio Transcription
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "speaker.wave.3.fill")
+                        Text("System Audio")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.purple)
+                    
+                    ScrollView {
+                        HStack(alignment: .top, spacing: 0) {
+                            Text(manager.systemConfirmedText)
+                                .fontWeight(.bold)
+                            + Text(manager.systemHypothesisText)
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 300)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(12)
+                }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 300)
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(12)
             
             Button(action: {
                 manager.toggleRecording()
@@ -62,6 +99,12 @@ struct WhisperStreamView: View {
                 .padding()
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(12)
+            }
+            
+            if manager.isRecording {
+                Text("Recording both microphone and system audio...")
+                    .foregroundColor(.secondary)
+                    .italic()
             }
         }
     }

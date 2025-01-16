@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import AVFoundation
 
 @available(macOS 15.0, *)
 @main
@@ -21,5 +20,6 @@ struct GranolaCloneApp: App {
                 .environmentObject(menuBarManager)
                 .environmentObject(permissionsManager)
         }
+        .modelContainer(for: Note.self)
     }
 }

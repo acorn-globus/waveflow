@@ -12,12 +12,10 @@ import SwiftData
 struct ContentView: View {
     @EnvironmentObject private var menuBarManager: MenuBarManager
     @EnvironmentObject private var permissionsManager: AudioPermissionsManager
+    @StateObject private var manager = WhisperManager()
 
     var body: some View {
         VStack(spacing: 20) {
-            if menuBarManager.isListening {
-                ListeningIndicator()
-            }
             if !permissionsManager.microphonePermissionGranted || !permissionsManager.systemAudioPermissionGranted {
                 Text("Audio Permissions")
                     .font(.title)
@@ -34,9 +32,11 @@ struct ContentView: View {
                     action: permissionsManager.requestSystemAudioPermission
                 )
             }
-            else {
+            else if !manager.isModelLoaded {
                 // Show transcription view
-                WhisperStreamView()
+                ModelDownload(manager: manager)
+            } else {
+                NotesList()
             }
         }
         .frame(width: 600, height: 400)

@@ -3,6 +3,7 @@ import WhisperKit
 
 struct WhisperStreamView: View {
     @StateObject private var manager = WhisperManager()
+    var note: Note
     
     var body: some View {
         VStack(spacing: 20) {

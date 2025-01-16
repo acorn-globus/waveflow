@@ -7,23 +7,37 @@ import CoreMedia
 
 @available(macOS 15.0, *)
 class TranscriptionManager: ObservableObject {
+    // Published properties for UI updates
     @Published var transcribedText: String = ""
     @Published var isProcessing: Bool = false
     @Published var isInitialized: Bool = false
-    @Published var availableMicrophones: [AVCaptureDevice] = []
-    @Published var selectedMicrophoneID: String? = nil
-    @Published var microphoneLevel: Float = 0.0
+    @Published var currentText: String = ""
+    @Published var confirmedText: String = ""
+    @Published var hypothesisText: String = ""
     
+    // Real-time transcription state
+    private var lastBufferSize: Int = 0
+    private var currentFallbacks: Int = 0
+    private var lastAgreedSeconds: Float = 0.0
+    private var prevResult: TranscriptionResult?
+    private var prevWords: [WordTiming] = []
+    private var lastAgreedWords: [WordTiming] = []
+    private var confirmedWords: [WordTiming] = []
+    private var hypothesisWords: [WordTiming] = []
+    private var eagerResults: [TranscriptionResult?] = []
+    
+    // Configuration
+    private let tokenConfirmationsNeeded: Int = 2
+    private let compressionCheckWindow: Int = 20
+    private let silenceThreshold: Float = 0.3
+    private let useVAD: Bool = true
+    
+    // Core components
     private var whisperKit: WhisperKit?
     private var stream: SCStream?
     private var streamOutput: ScreenCaptureStreamOutput?
     private let audioSampleBufferQueue = DispatchQueue(label: "audio-sample-buffer-queue")
     private let micSampleBufferQueue = DispatchQueue(label: "mic-sample-buffer-queue")
-    private var audioFile: AVAudioFile?
-    private var tempURL: URL?
-    private var systemFormat: AVAudioFormat?
-    private var micFormat: AVAudioFormat?
-    
     
     init() {
         Task {
@@ -33,58 +47,18 @@ class TranscriptionManager: ObservableObject {
     }
     
     private func setupScreenCapture() async {
-        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("recording.wav")
-        
         streamOutput = ScreenCaptureStreamOutput(
             audioSampleHandler: { pcmBuffer in
-                // Handle system audio samples here
-                guard let url = self.tempURL else { return }
                 print("Received audio samples")
-                
-                if self.audioFile == nil {
-                    guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
-                        print("Failed to create audio format")
-                        return
-                    }
-                            
-                    do {
-                        self.audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
-                    } catch {
-                        print("Error creating audio file: \(error)")
-                        return
-                    }
-                }
-
-                do {
-                    try self.audioFile?.write(from: pcmBuffer)
-                } catch {
-                    print("Error writing audio buffer: \(error)")
+                Task {
+                    await self.transcribeBuffer(Array(_immutableCocoaArray: pcmBuffer))
                 }
             },
             microphoneHandler: { pcmBuffer in
-                // Handle microphone audio samples here
-                guard let url = self.tempURL else { return }
-                print("Received microphone input")
-                
-                if self.audioFile == nil {
-                    guard let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2) else {
-                        print("Failed to create audio format")
-                        return
-                    }
-                            
-                    do {
-                        self.audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
-                    } catch {
-                        print("Error creating audio file: \(error)")
-                        return
-                    }
-                }
-
-                do {
-                    try self.audioFile?.write(from: pcmBuffer)
-                } catch {
-                    print("Error writing audio buffer: \(error)")
-                }
+//                print("Received microphone input")
+//                Task {
+//                    await self.transcribeBuffer(Array(_immutableCocoaArray: pcmBuffer))
+//                }
             }
         )
         
@@ -101,8 +75,7 @@ class TranscriptionManager: ObservableObject {
             configuration.captureMicrophone = true
             configuration.microphoneCaptureDeviceID = AVCaptureDevice.default(for: .audio)?.uniqueID
             configuration.queueDepth = 5
-
-            // Set up audio configuration
+            
             configuration.sampleRate = 48000
             configuration.channelCount = 2
             
@@ -134,14 +107,7 @@ class TranscriptionManager: ObservableObject {
             return
         }
         
-        // Delete existing recording if any
-        if let url = tempURL {
-            try? FileManager.default.removeItem(at: url)
-        }
-        
-        // Reset audio file
-        audioFile = nil
-        
+        resetTranscriptionState()
         stream?.startCapture()
         isProcessing = true
         print("Recording started successfully")
@@ -150,64 +116,194 @@ class TranscriptionManager: ObservableObject {
     func stopRecording() {
         print("Stop recording called")
         stream?.stopCapture()
-        audioFile = nil
         isProcessing = false
-        
-        Task {
-            print("Starting transcription task")
-            await transcribeRecording()
-            print("Transcription task completed")
-        }
     }
     
-    private func transcribeRecording() async {
-        guard let whisperKit = whisperKit,
-              let url = tempURL else {
-            print("Missing WhisperKit or URL")
+    private func transcribeBuffer(_ samples: [Float]) async {
+        guard let whisperKit = whisperKit else {
+            print("Missing WhisperKit")
             return
         }
-        print("Starting transcription")
         
-        do {
-            let fileSize = try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? UInt64 ?? 0
-            print("Attempting to transcribe file at: \(url.path)")
-            print("File size before transcription: \(fileSize) bytes")
+        // Calculate buffer metrics
+        let nextBufferSize = samples.count - lastBufferSize
+        let nextBufferSeconds = Float(nextBufferSize) / Float(WhisperKit.sampleRate)
+        print("Buffer metrics - size: \(nextBufferSize), seconds: \(nextBufferSeconds)")
+        
+        // Only process if we have at least 1 second of new audio
+        guard nextBufferSeconds > 1 else {
+            await MainActor.run {
+                if currentText.isEmpty {
+                    currentText = "Waiting for speech..."
+                }
+            }
+            return
+        }
+        
+        // Voice Activity Detection
+        if useVAD {
+            let averageEnergy = calculateBufferEnergy(samples)
+            let voiceDetected = averageEnergy > silenceThreshold
+            print("VAD - energy: \(averageEnergy), voice detected: \(voiceDetected)")
             
-            if fileSize == 0 {
-                print("Warning: File is empty!")
+            guard voiceDetected else {
+                await MainActor.run {
+                    if currentText.isEmpty {
+                        currentText = "Waiting for speech..."
+                    }
+                }
                 return
             }
-            
-            let results = try await whisperKit.transcribe(
-                audioPath: url.path,
-                decodeOptions: .init()
+        }
+        
+        // Store this for next iteration's calculations
+        lastBufferSize = samples.count
+        
+        do {
+            let options = DecodingOptions(
+                verbose: true,  // Enable for debugging
+                temperature: 0.0,
+                temperatureFallbackCount: 5,
+                sampleLength: 224,
+                usePrefillPrompt: true,
+                usePrefillCache: true,
+                skipSpecialTokens: false,
+                wordTimestamps: true,
+                clipTimestamps: [lastAgreedSeconds],
+                prefixTokens: lastAgreedWords.flatMap { $0.tokens },
+                firstTokenLogProbThreshold: -1.5
             )
-            let transcription = results.map { $0.text }.joined(separator: " ")
-            print("Raw transcription results: \(results)")
-            print("Processed transcription: \(transcription)")
             
-            if !transcription.isEmpty {
-                await MainActor.run {
-                    self.transcribedText += transcription + " "
+            // Callback for monitoring transcription progress
+            let decodingCallback: ((TranscriptionProgress) -> Bool?) = { progress in
+                Task { @MainActor in
+                    let fallbacks = Int(progress.timings.totalDecodingFallbacks)
+                    if progress.text.count < self.currentText.count && fallbacks != self.currentFallbacks {
+                        print("Fallback occurred: \(fallbacks)")
+                    }
+                    self.currentText = progress.text
+                    self.currentFallbacks = fallbacks
+                    print("Progress update - text: \(progress.text)")
                 }
-            } else {
-                print("Warning: Transcription was empty")
+                
+                // Check for early stopping conditions
+                let currentTokens = progress.tokens
+                if currentTokens.count > self.compressionCheckWindow {
+                    let checkTokens = Array(currentTokens.suffix(self.compressionCheckWindow))
+                    if self.compressionRatio(of: checkTokens) > options.compressionRatioThreshold ?? 0.5 {
+                        return false
+                    }
+                }
+                
+                if progress.avgLogprob ?? 0 < options.logProbThreshold ?? -1.0 {
+                    return false
+                }
+                
+                return nil
             }
+            
+            print("Starting transcription with buffer size: \(samples.count)")
+            let transcription: TranscriptionResult? = try await whisperKit.transcribe(
+                audioArray: samples,
+                decodeOptions: options,
+                callback: decodingCallback
+            )
+            print("Transcription completed")
+            
+            // Update UI with results
+            await MainActor.run {
+                if let result = transcription {
+                    print("Processing result: \(result.text)")
+                    // Filter words that start after our last confirmed point
+                    hypothesisWords = result.allWords.filter { $0.start >= lastAgreedSeconds }
+                    
+                    if let prevResult = prevResult {
+                        prevWords = prevResult.allWords.filter { $0.start >= lastAgreedSeconds }
+                        let commonPrefix = findLongestCommonPrefix(prevWords, hypothesisWords)
+                        
+                        // If we have enough matching words, confirm them
+                        if commonPrefix.count >= tokenConfirmationsNeeded {
+                            lastAgreedWords = Array(commonPrefix.suffix(tokenConfirmationsNeeded))
+                            lastAgreedSeconds = lastAgreedWords.first?.start ?? lastAgreedSeconds
+                            
+                            // Add confirmed words except for the confirmation window
+                            let newConfirmedWords = commonPrefix.prefix(commonPrefix.count - tokenConfirmationsNeeded)
+                            confirmedWords.append(contentsOf: newConfirmedWords)
+                            
+                            // Update confirmed text
+                            confirmedText = confirmedWords.map { $0.word }.joined(separator: " ")
+                        }
+                    }
+                    
+                    // Update hypothesis text with current hypothesis
+                    let currentHypothesis = lastAgreedWords + hypothesisWords
+                    hypothesisText = currentHypothesis.map { $0.word }.joined(separator: " ")
+                    
+                    // Store result for next comparison
+                    prevResult = result
+                    eagerResults.append(result)
+                    
+                    // Update the published transcribed text
+                    transcribedText = confirmedText + (hypothesisText.isEmpty ? "" : " " + hypothesisText)
+                }
+            }
+            
         } catch {
             print("Error transcribing audio: \(error)")
         }
     }
     
+    private func calculateBufferEnergy(_ samples: [Float]) -> Float {
+        let sum = samples.reduce(0) { $0 + abs($1) }
+        return sum / Float(samples.count)
+    }
     
+    private func compressionRatio(of tokens: [Int]) -> Float {
+        let tokenString = tokens.map { String($0) }.joined(separator: ",")
+        let data = tokenString.data(using: .utf8) ?? Data()
+        
+        guard let compressed = try? (data as NSData).compressed(using: .zlib),
+              compressed.length > 0 else {
+            return 1.0
+        }
+        
+        return Float(compressed.length) / Float(data.count)
+    }
+    
+    private func findLongestCommonPrefix(_ a: [WordTiming], _ b: [WordTiming]) -> [WordTiming] {
+        var prefix: [WordTiming] = []
+        for (wordA, wordB) in zip(a, b) {
+            if wordA.word == wordB.word && abs(wordA.start - wordB.start) < 0.5 {
+                prefix.append(wordA)
+            } else {
+                break
+            }
+        }
+        return prefix
+    }
+    
+    private func resetTranscriptionState() {
+        currentText = ""
+        confirmedText = ""
+        hypothesisText = ""
+        lastBufferSize = 0
+        currentFallbacks = 0
+        lastAgreedSeconds = 0.0
+        prevResult = nil
+        prevWords = []
+        lastAgreedWords = []
+        confirmedWords = []
+        hypothesisWords = []
+        eagerResults = []
+        transcribedText = ""
+    }
 }
 
 @available(macOS 15.0, *)
 class ScreenCaptureStreamOutput: NSObject, SCStreamOutput {
-    // Closure types for handling different output types
     typealias AudioSampleHandler = (AVAudioPCMBuffer) -> Void
     typealias MicrophoneHandler = (AVAudioPCMBuffer) -> Void
     
-    // Handlers for different types of output
     private var audioSampleHandler: AudioSampleHandler?
     private var microphoneHandler: MicrophoneHandler?
     
@@ -218,7 +314,6 @@ class ScreenCaptureStreamOutput: NSObject, SCStreamOutput {
         super.init()
     }
     
-    // SCStreamOutput protocol implementation
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of outputType: SCStreamOutputType) {
         guard sampleBuffer.isValid else { return }
         
@@ -234,7 +329,6 @@ class ScreenCaptureStreamOutput: NSObject, SCStreamOutput {
         }
     }
     
-    // Process audio sample buffers
     private func handleAudio(for buffer: CMSampleBuffer) {
         processAudioBuffer(buffer, handler: audioSampleHandler)
     }

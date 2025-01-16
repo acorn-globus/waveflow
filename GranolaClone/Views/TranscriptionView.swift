@@ -11,13 +11,40 @@ struct TranscriptionView: View {
                 HStack {
                     Text("Transcribing...")
                         .foregroundColor(.secondary)
+                    if !transcriptionManager.currentText.isEmpty {
+                        Text("• Processing...")
+                            .foregroundColor(.secondary)
+                            .opacity(0.7)
+                    }
                 }
             }
             
             ScrollView {
-                Text(transcriptionManager.transcribedText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+                VStack(alignment: .leading, spacing: 8) {
+                    // Confirmed text
+                    if !transcriptionManager.confirmedText.isEmpty {
+                        Text(transcriptionManager.confirmedText)
+                            .fontWeight(.medium)
+                    }
+                    
+                    // Hypothesis text (current processing)
+                    if !transcriptionManager.hypothesisText.isEmpty {
+                        Text(transcriptionManager.hypothesisText)
+                            .foregroundColor(.secondary)
+                            .italic()
+                    }
+                    
+                    // Current processing text
+                    if !transcriptionManager.currentText.isEmpty {
+                        Text(transcriptionManager.currentText)
+                            .foregroundColor(.secondary)
+                            .opacity(0.7)
+                            .italic()
+                            .font(.callout)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.textBackgroundColor))
@@ -30,8 +57,19 @@ struct TranscriptionView: View {
                 
                 Spacer()
                 
+                Button("Copy") {
+                    #if os(macOS)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(transcriptionManager.transcribedText, forType: .string)
+                    #endif
+                }
+                .disabled(transcriptionManager.transcribedText.isEmpty)
+                
                 Button("Clear") {
                     transcriptionManager.transcribedText = ""
+                    transcriptionManager.confirmedText = ""
+                    transcriptionManager.hypothesisText = ""
+                    transcriptionManager.currentText = ""
                 }
                 .disabled(transcriptionManager.transcribedText.isEmpty)
             }

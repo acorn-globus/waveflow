@@ -12,7 +12,6 @@ import SwiftData
 struct ContentView: View {
     @EnvironmentObject private var menuBarManager: MenuBarManager
     @EnvironmentObject private var permissionsManager: AudioPermissionsManager
-    @EnvironmentObject private var transcriptionManager: TranscriptionManager
 
     var body: some View {
         VStack(spacing: 20) {
@@ -35,24 +34,20 @@ struct ContentView: View {
                     action: permissionsManager.requestSystemAudioPermission
                 )
             }
-            else if !transcriptionManager.isInitialized {
-                // Show loading view while WhisperKit initializes
-                ProgressView("Initializing WhisperKit...")
-                    .progressViewStyle(CircularProgressViewStyle())
-            } else {
+            else {
                 // Show transcription view
-                TranscriptionView(transcriptionManager: transcriptionManager)
+                WhisperStreamView()
             }
         }
         .frame(width: 600, height: 400)
-        .onChange(of: menuBarManager.isListening) { _, isListening in
-            if isListening {
-                print("Starting recording...CV")
-                transcriptionManager.startRecording()
-            } else {
-                transcriptionManager.stopRecording()
-            }
-        }
+//        .onChange(of: menuBarManager.isListening) { _, isListening in
+//            if isListening {
+//                print("Starting recording...CV")
+//                transcriptionManager.startRecording()
+//            } else {
+//                transcriptionManager.stopRecording()
+//            }
+//        }
     }
 }
 

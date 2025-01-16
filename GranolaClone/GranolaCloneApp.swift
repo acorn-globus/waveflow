@@ -14,14 +14,12 @@ import AVFoundation
 struct GranolaCloneApp: App {
     @StateObject private var menuBarManager = MenuBarManager()
     @StateObject private var permissionsManager = AudioPermissionsManager()
-    @StateObject private var transcriptionManager = TranscriptionManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(menuBarManager)
                 .environmentObject(permissionsManager)
-                .environmentObject(transcriptionManager)
         }
     }
 }

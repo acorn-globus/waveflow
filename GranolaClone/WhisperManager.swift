@@ -47,9 +47,9 @@ class WhisperManager: ObservableObject {
     private var systemHypothesisWords: [WordTiming] = []
     
     private let tokenConfirmationsNeeded: Int = 2
-    private let modelName = "whisper-large-v3"
+    private let modelName = "whisper-small"
     private let repoName = "argmaxinc/whisperkit-coreml"
-    
+
     init() {
         Task {
             await loadModel()
@@ -266,7 +266,6 @@ class WhisperManager: ObservableObject {
     }
     
     private func transcribeSystemBuffer() async throws {
-        print("---------------------TRANSCRIBING SYSTEM BUFFER-----------------------")
         guard let whisperKit = whisperKit,
               let systemBuffer = systemAudioProcessor?.audioSamples else { return }
         

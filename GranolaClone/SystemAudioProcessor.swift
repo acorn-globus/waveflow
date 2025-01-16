@@ -158,7 +158,7 @@ class SystemAudioProcessor: ObservableObject {
     func stopRecording() {
         Task {
             try? await stream?.stopCapture()
-            stream = nil
+            // stream = nil
             audioSampleBuffer.removeAll()
             audioEnergy.removeAll()
         }

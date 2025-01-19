@@ -9,7 +9,7 @@ class Note {
     @Relationship(deleteRule: .cascade, inverse: \TranscriptionMessage.note) var messages: [TranscriptionMessage]
     var createdAt: Date
     
-    init(title: String, body: String) {
+    init(title: String, body: String = "") {
         self.id = UUID()
         self.title = title
         self.body = body

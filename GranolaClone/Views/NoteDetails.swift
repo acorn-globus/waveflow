@@ -1,10 +1,3 @@
-//
-//  NoteDetails.swift
-//  GranolaClone
-//
-//  Created by Partha Praharaj on 16/01/25.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -16,7 +9,7 @@ struct NoteDetails: View {
                 TextField("Title", text: $note.title)
                 TextField("Body", text: $note.body, axis: .vertical)
             }
-            WhisperStreamView(note: note)
+            WhisperStreamView(currentNote: note)
         }
         .navigationTitle(note.title)
     }
@@ -28,9 +21,9 @@ struct NoteDetails: View {
 //        let container =  try ModelContainer(for: Note.self,configuration: config)
 //        let example = Note(title: "Example", body: "This is an example note.")
 //        
-//        NoteDetails(Note: example).modelContext(container)
+//        NoteDetails(note: example)
 //    } catch {
 //        fatalError("Error creating preview: \(error)")
 //    }
 //}
-// 
+ 

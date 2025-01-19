@@ -5,16 +5,14 @@ import SwiftData
 class TranscriptionMessage {
     var id: UUID
     var source: String // Store as string since enum isn't directly supported
-    var confirmedText: String
-    var hypothesisText: String
+    var text: String
     var note: Note?
     var createdAt: Date
     
-    init(source: MessageSource, confirmedText: String, hypothesisText: String, note: Note? = nil) {
+    init(source: MessageSource, text: String, note: Note? = nil) {
         self.id = UUID()
         self.source = source.rawValue
-        self.confirmedText = confirmedText
-        self.hypothesisText = hypothesisText
+        self.text = text
         self.note = note
         self.createdAt = Date()
     }

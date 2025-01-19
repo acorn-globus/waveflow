@@ -33,7 +33,6 @@ struct ContentView: View {
                 )
             }
             else if !manager.isModelLoaded {
-                // Show transcription view
                 ModelDownload(manager: manager)
             } else {
                 NotesList()

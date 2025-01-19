@@ -1,19 +1,55 @@
 import SwiftUI
+import SwiftData
 import WhisperKit
 
 struct WhisperStreamView: View {
-    @StateObject private var manager = WhisperManager()
-    var note: Note
+    @Environment(\.modelContext) var modelContext
+    @StateObject private var whisperManager = WhisperManager()
+    var currentNote: Note
+    @Query(sort: \TranscriptionMessage.createdAt) var messages: [TranscriptionMessage]
+    @State private var currentMicText: TranscriptionMessage?
+    @State private var currentSystemText: TranscriptionMessage?
+    
+    init(currentNote: Note) {
+        self.currentNote = currentNote
+        let id = currentNote.id
+        let predicate = #Predicate<TranscriptionMessage> { message in
+            message.note?.id == id
+        }
+        
+        _messages = Query(filter: predicate, sort: [SortDescriptor(\.createdAt)] )
+    }
     
     var body: some View {
         VStack(spacing: 20) {
-            if !manager.isModelLoaded {
+            if !whisperManager.isModelLoaded {
                 loadingView
             } else {
-                transcriptionView
+                // transcriptionView
+                chatView
             }
         }
         .padding()
+        .onChange(of: whisperManager.micConfirmedTextReset) {  _, micText in
+            if micText == "" { return }
+            currentSystemText = nil
+            if currentMicText == nil{
+                currentMicText = TranscriptionMessage(source: .microphone, text: micText, note: currentNote)
+            }else{
+                currentMicText?.text += " \(micText)"
+            }
+            modelContext.insert(currentMicText!)
+        }
+        .onChange(of: whisperManager.systemConfirmedTextReset) { _, systemText in
+            if systemText == "" { return }
+            currentMicText = nil
+            if currentSystemText == nil{
+                currentSystemText = TranscriptionMessage(source: .system, text: systemText, note: currentNote)
+            }else{
+                currentSystemText?.text += " \(systemText)"
+            }
+            modelContext.insert(currentSystemText!)
+        }
     }
     
     private var loadingView: some View {
@@ -21,11 +57,11 @@ struct WhisperStreamView: View {
             Text("Loading WhisperKit Model...")
                 .font(.headline)
             
-            ProgressView(value: manager.downloadProgress)
+            ProgressView(value: whisperManager.downloadProgress)
                 .progressViewStyle(.linear)
                 .frame(maxWidth: 300)
             
-            Text(manager.modelState.description)
+            Text(whisperManager.modelState.description)
                 .foregroundColor(.secondary)
         }
     }
@@ -34,7 +70,9 @@ struct WhisperStreamView: View {
         VStack(spacing: 20) {
             HStack(spacing: 20) {
                 // Microphone Transcription
+                Text(currentNote.title)
                 VStack(alignment: .leading, spacing: 10) {
+                   
                     HStack {
                         Image(systemName: "mic.fill")
                         Text("Microphone")
@@ -44,9 +82,9 @@ struct WhisperStreamView: View {
                     
                     ScrollView {
                         HStack(alignment: .top, spacing: 0) {
-                            Text(manager.micConfirmedText)
+                            Text(whisperManager.micConfirmedText)
                                 .fontWeight(.bold)
-                            + Text(manager.micHypothesisText)
+                            + Text(whisperManager.micHypothesisText)
                                 .foregroundColor(.gray)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -69,9 +107,9 @@ struct WhisperStreamView: View {
                     
                     ScrollView {
                         HStack(alignment: .top, spacing: 0) {
-                            Text(manager.systemConfirmedText)
+                            Text(whisperManager.systemConfirmedText)
                                 .fontWeight(.bold)
-                            + Text(manager.systemHypothesisText)
+                            + Text(whisperManager.systemHypothesisText)
                                 .foregroundColor(.gray)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,16 +123,16 @@ struct WhisperStreamView: View {
             }
             
             Button(action: {
-                manager.toggleRecording()
+                whisperManager.toggleRecording()
             }) {
                 HStack {
-                    Image(systemName: manager.isRecording ? "stop.circle.fill" : "record.circle")
+                    Image(systemName: whisperManager.isRecording ? "stop.circle.fill" : "record.circle")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 44, height: 44)
-                        .foregroundColor(manager.isRecording ? .red : .green)
+                        .foregroundColor(whisperManager.isRecording ? .red : .green)
                     
-                    Text(manager.isRecording ? "Stop Recording" : "Start Recording")
+                    Text(whisperManager.isRecording ? "Stop Recording" : "Start Recording")
                         .font(.headline)
                 }
                 .padding()
@@ -102,10 +140,78 @@ struct WhisperStreamView: View {
                 .cornerRadius(12)
             }
             
-            if manager.isRecording {
+            if whisperManager.isRecording {
                 Text("Recording both microphone and system audio...")
                     .foregroundColor(.secondary)
                     .italic()
+            }
+        }
+    }
+    
+    private var chatView: some View {
+        VStack {
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(messages) { message in
+                        let isLastIndex = message.id == messages.last?.id
+                        if currentSystemText != nil {
+                            MessageBubbleView(message: message, hypothesisText: isLastIndex ? whisperManager.systemHypothesisText: "")
+                        }
+                        else {
+                            MessageBubbleView(message: message, hypothesisText: isLastIndex ? whisperManager.micHypothesisText: "")
+                        }
+                    }
+                }
+                .padding()
+            }
+            
+            Button(action: {
+                whisperManager.toggleRecording()
+            }) {
+                HStack {
+                    Image(systemName: whisperManager.isRecording ? "stop.circle.fill" : "record.circle")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 44)
+                        .foregroundColor(whisperManager.isRecording ? .red : .green)
+                    
+                    Text(whisperManager.isRecording ? "Stop Recording" : "Start Recording")
+                        .font(.headline)
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(12)
+                }
+            }
+    }
+}
+
+
+struct MessageBubbleView: View {
+    let message: TranscriptionMessage
+    let hypothesisText: String
+    
+    var body: some View {
+        HStack {
+            if message.source == "microphone" {
+                Spacer()
+            }
+            
+            VStack(alignment: message.source == "microphone" ? .trailing : .leading) {
+                HStack(alignment: .top, spacing: 0) {
+                    Text("\(message.text) \(hypothesisText)")
+                        .fontWeight(.bold)
+                }
+                .padding()
+                .background(message.source == "microphone" ? Color.blue.opacity(0.2) : Color.gray.opacity(0.2))
+                .cornerRadius(12)
+                
+                Text(message.createdAt.formatted(date: .omitted, time: .shortened))
+            }
+            .frame(alignment: message.source == "microphone" ? .trailing : .leading)
+            
+            if message.source == "system" {
+                Spacer()
             }
         }
     }

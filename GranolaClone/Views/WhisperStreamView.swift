@@ -31,7 +31,8 @@ struct WhisperStreamView: View {
         }
         .padding()
         .onChange(of: whisperManager.micConfirmedTextReset) {  _, micText in
-            if micText == "" { return }
+            guard micText != "" else { return }
+
             currentSystemText = nil
             if currentMicText == nil{
                 currentMicText = TranscriptionMessage(source: .microphone, text: micText, note: currentNote)
@@ -41,7 +42,8 @@ struct WhisperStreamView: View {
             modelContext.insert(currentMicText!)
         }
         .onChange(of: whisperManager.systemConfirmedTextReset) { _, systemText in
-            if systemText == "" { return }
+            guard systemText != "" else { return }
+
             currentMicText = nil
             if currentSystemText == nil{
                 currentSystemText = TranscriptionMessage(source: .system, text: systemText, note: currentNote)
@@ -199,8 +201,7 @@ struct MessageBubbleView: View {
             
             VStack(alignment: message.source == "microphone" ? .trailing : .leading) {
                 HStack(alignment: .top, spacing: 0) {
-                    Text("\(message.text) \(hypothesisText)")
-                        .fontWeight(.bold)
+                    Text("\(Text(message.text).fontWeight(.bold)) \(Text(hypothesisText).fontWeight(.light))")
                 }
                 .padding()
                 .background(message.source == "microphone" ? Color.blue.opacity(0.2) : Color.gray.opacity(0.2))

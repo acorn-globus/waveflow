@@ -4,12 +4,16 @@ import SwiftData
 struct NoteDetails: View {
     @Bindable var note: Note
     var body: some View {
-        VStack {
+        HStack {
             Form {
                 TextField("Title", text: $note.title)
-                TextField("Body", text: $note.body, axis: .vertical)
+                TextEditor(text: $note.body)
+                    .font(.body)
+                    .padding()
+                    .background(Color(.textBackgroundColor))
+                    .cornerRadius(8)
             }
-            WhisperStreamView(currentNote: note)
+            TranscriptionSection(currentNote: note)
         }
         .navigationTitle(note.title)
     }
@@ -26,4 +30,3 @@ struct NoteDetails: View {
 //        fatalError("Error creating preview: \(error)")
 //    }
 //}
- 

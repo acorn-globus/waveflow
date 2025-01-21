@@ -43,5 +43,5 @@ struct NotesListSection: View {
 }
 
 #Preview {
-    NotesList()
+    NotesListSection()
 }

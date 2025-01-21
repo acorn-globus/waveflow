@@ -126,6 +126,8 @@ class OllamaManager: ObservableObject {
             do {
                 for try await responseData in ollamaKit.generate(data: reqData) {
                     // Handle each generated response
+                    print("Response: \(responseData)")
+                    print("Response Text: \(responseData.response)")
                     summaryData = responseData.response
                 }
             } catch {

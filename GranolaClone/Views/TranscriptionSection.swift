@@ -5,7 +5,10 @@ import WhisperKit
 struct TranscriptionSection: View {
     @Environment(\.modelContext) var modelContext
     @EnvironmentObject private var whisperManager: WhisperManager
+    @EnvironmentObject private var ollamaManager: OllamaManager
+
     var currentNote: Note
+
     @Query(sort: \TranscriptionMessage.createdAt) var messages: [TranscriptionMessage]
     @State private var currentMicText: TranscriptionMessage?
     @State private var currentSystemText: TranscriptionMessage?
@@ -23,14 +26,62 @@ struct TranscriptionSection: View {
     var body: some View {
         VStack(spacing: 20) {
             if !whisperManager.isModelLoaded {
-                loadingView
+                VStack(spacing: 16) {
+                    Text("Loading WhisperKit Model...")
+                        .font(.headline)
+                    
+                    ProgressView(value: whisperManager.downloadProgress)
+                        .progressViewStyle(.linear)
+                        .frame(maxWidth: 300)
+                    
+                    Text(whisperManager.modelState.description)
+                        .foregroundColor(.secondary)
+                }
             } else {
-                chatView
+                VStack {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(messages) { message in
+                                let isLastIndex = message.id == messages.last?.id
+                                if currentSystemText != nil {
+                                    MessageBubble(message: message, hypothesisText: isLastIndex ? whisperManager.systemHypothesisText: "")
+                                }
+                                else {
+                                    MessageBubble(message: message, hypothesisText: isLastIndex ? whisperManager.micHypothesisText: "")
+                                }
+                            }
+                        }
+                        .padding()
+                    }
+                    
+                    Button(action: {
+                        whisperManager.toggleRecording()
+                    }) {
+                        HStack {
+                            Image(systemName: whisperManager.isRecording ? "stop.circle.fill" : "record.circle")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 44, height: 44)
+                                .foregroundColor(whisperManager.isRecording ? .red : .green)
+                            
+                            Text(whisperManager.isRecording ? "Stop Recording" : "Start Recording")
+                                .font(.headline)
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    Button("Generate Summary",action: {
+                        Task {
+                            await generateSummary()
+                        }
+                    })
+                }
             }
         }
         .padding()
         .onChange(of: whisperManager.micConfirmedTextReset) {  _, micText in
-            guard micText != "" else { return }
+            guard !micText.isEmpty else { return }
 
             currentSystemText = nil
             if currentMicText == nil{
@@ -41,7 +92,7 @@ struct TranscriptionSection: View {
             modelContext.insert(currentMicText!)
         }
         .onChange(of: whisperManager.systemConfirmedTextReset) { _, systemText in
-            guard systemText != "" else { return }
+            guard !systemText.isEmpty else { return }
 
             currentMicText = nil
             if currentSystemText == nil{
@@ -51,56 +102,35 @@ struct TranscriptionSection: View {
             }
             modelContext.insert(currentSystemText!)
         }
-    }
-    
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            Text("Loading WhisperKit Model...")
-                .font(.headline)
-            
-            ProgressView(value: whisperManager.downloadProgress)
-                .progressViewStyle(.linear)
-                .frame(maxWidth: 300)
-            
-            Text(whisperManager.modelState.description)
-                .foregroundColor(.secondary)
+        .onChange(of: ollamaManager.summaryData) { _, summaryData in
+            currentNote.summary.append(contentsOf: summaryData)
+            modelContext.insert(currentNote)
         }
     }
     
-    private var chatView: some View {
-        VStack {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(messages) { message in
-                        let isLastIndex = message.id == messages.last?.id
-                        if currentSystemText != nil {
-                            MessageBubble(message: message, hypothesisText: isLastIndex ? whisperManager.systemHypothesisText: "")
-                        }
-                        else {
-                            MessageBubble(message: message, hypothesisText: isLastIndex ? whisperManager.micHypothesisText: "")
-                        }
-                    }
-                }
-                .padding()
-            }
-            
-            Button(action: {
-                whisperManager.toggleRecording()
-            }) {
-                HStack {
-                    Image(systemName: whisperManager.isRecording ? "stop.circle.fill" : "record.circle")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 44, height: 44)
-                        .foregroundColor(whisperManager.isRecording ? .red : .green)
-                    
-                    Text(whisperManager.isRecording ? "Stop Recording" : "Start Recording")
-                        .font(.headline)
-                    }
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
-                }
-            }
+    private func generateSummary() async {
+        guard !whisperManager.isRecording else { return }
+        var transcript = ""
+        
+        for message in messages {
+            let currentMessage = "\(message.source.capitalized): \(message.text) \n"
+            transcript += currentMessage
+        }
+        
+        let prompt = """
+            Summarize the provided meeting transcript to highlight key insights and actionable points. Focus on extracting valuable details and presenting them in a clear, well-structured Markdown format.
+        
+            # Transcript
+            \(transcript)
+        
+            # User Notes
+            \(currentNote.body)
+        """
+        
+        print("--------------------------------------------")
+        print(prompt)
+        print("--------------------------------------------")
+        
+        try? await ollamaManager.generateResponse(prompt: prompt)
     }
 }

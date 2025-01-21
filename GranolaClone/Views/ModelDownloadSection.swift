@@ -1,7 +1,7 @@
 import SwiftUI
 import WhisperKit
 
-struct ModelDownload: View {
+struct ModelDownloadSection: View {
     @EnvironmentObject private var whisperManager: WhisperManager
     @EnvironmentObject private var ollamaManager: OllamaManager
     

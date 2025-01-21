@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		830E399F2D3F527600DD39E0 /* OllamaKit in Frameworks */ = {isa = PBXBuildFile; productRef = 830E399E2D3F527600DD39E0 /* OllamaKit */; };
 		83E977E62D2FE96B00F21592 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 83E977E52D2FE96B00F21592 /* WhisperKit */; };
 /* End PBXBuildFile section */
 
@@ -27,11 +28,46 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		83BE85742D3FA5CD008B4B1F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = ollama;
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		839806982D2D6EAB00E2BE1E /* GranolaClone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GranolaClone.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		839806AB2D2D6EAC00E2BE1E /* GranolaCloneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GranolaCloneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		839806B52D2D6EAC00E2BE1E /* GranolaCloneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GranolaCloneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		83BE85772D3FA5E9008B4B1F /* Exceptions for "Resources" folder in "GranolaClone" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ollama/ollama,
+			);
+			target = 839806972D2D6EAB00E2BE1E /* GranolaClone */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		83BE85762D3FA5DA008B4B1F /* Exceptions for "Resources" folder in "Copy Files" phase from "GranolaClone" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			attributesByRelativePath = {
+				ollama/ollama = (CodeSignOnCopy, );
+			};
+			buildPhase = 83BE85742D3FA5CD008B4B1F /* CopyFiles */;
+			membershipExceptions = (
+				ollama/ollama,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8398069A2D2D6EAB00E2BE1E /* GranolaClone */ = {
@@ -49,6 +85,15 @@
 			path = GranolaCloneUITests;
 			sourceTree = "<group>";
 		};
+		83BE856D2D3F7E0E008B4B1F /* Resources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				83BE85772D3FA5E9008B4B1F /* Exceptions for "Resources" folder in "GranolaClone" target */,
+				83BE85762D3FA5DA008B4B1F /* Exceptions for "Resources" folder in "Copy Files" phase from "GranolaClone" target */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +102,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				83E977E62D2FE96B00F21592 /* WhisperKit in Frameworks */,
+				830E399F2D3F527600DD39E0 /* OllamaKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -80,6 +126,7 @@
 		8398068F2D2D6EAB00E2BE1E = {
 			isa = PBXGroup;
 			children = (
+				83BE856D2D3F7E0E008B4B1F /* Resources */,
 				8398069A2D2D6EAB00E2BE1E /* GranolaClone */,
 				839806AE2D2D6EAC00E2BE1E /* GranolaCloneTests */,
 				839806B82D2D6EAC00E2BE1E /* GranolaCloneUITests */,
@@ -107,6 +154,7 @@
 				839806942D2D6EAB00E2BE1E /* Sources */,
 				839806952D2D6EAB00E2BE1E /* Frameworks */,
 				839806962D2D6EAB00E2BE1E /* Resources */,
+				83BE85742D3FA5CD008B4B1F /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -114,10 +162,12 @@
 			);
 			fileSystemSynchronizedGroups = (
 				8398069A2D2D6EAB00E2BE1E /* GranolaClone */,
+				83BE856D2D3F7E0E008B4B1F /* Resources */,
 			);
 			name = GranolaClone;
 			packageProductDependencies = (
 				83E977E52D2FE96B00F21592 /* WhisperKit */,
+				830E399E2D3F527600DD39E0 /* OllamaKit */,
 			);
 			productName = GranolaClone;
 			productReference = 839806982D2D6EAB00E2BE1E /* GranolaClone.app */;
@@ -203,6 +253,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */,
+				8377BE4E2D3E7EF50023F5A1 /* XCRemoteSwiftPackageReference "OllamaKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 839806992D2D6EAB00E2BE1E /* Products */;
@@ -556,6 +607,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8377BE4E2D3E7EF50023F5A1 /* XCRemoteSwiftPackageReference "OllamaKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kevinhermawan/OllamaKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.7;
+			};
+		};
 		83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
@@ -567,6 +626,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		830E399E2D3F527600DD39E0 /* OllamaKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8377BE4E2D3E7EF50023F5A1 /* XCRemoteSwiftPackageReference "OllamaKit" */;
+			productName = OllamaKit;
+		};
 		83E977E52D2FE96B00F21592 /* WhisperKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */;

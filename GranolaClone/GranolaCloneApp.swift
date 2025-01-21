@@ -13,12 +13,16 @@ import SwiftData
 struct GranolaCloneApp: App {
     @StateObject private var menuBarManager = MenuBarManager()
     @StateObject private var permissionsManager = AudioPermissionsManager()
+    @StateObject private var whisperManager = WhisperManager()
+    @StateObject private var ollamaManager = OllamaManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(menuBarManager)
                 .environmentObject(permissionsManager)
+                .environmentObject(whisperManager)
+                .environmentObject(ollamaManager)
         }
         .modelContainer(for: Note.self)
     }

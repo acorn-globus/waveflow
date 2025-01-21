@@ -1,6 +1,15 @@
 {
-  "originHash" : "e843284a09b9d7fb8d0032fe1a3fd1fbd38f28ea54d42a39ccbe396af16d225d",
+  "originHash" : "01b8ab46aba908f9e711254d15a89ad035fe3def4c3c036a0ace75326d796c43",
   "pins" : [
+    {
+      "identity" : "ollamakit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kevinhermawan/OllamaKit.git",
+      "state" : {
+        "revision" : "791c4c74ee3e67a5bb4a50dc6620c590f119cfd1",
+        "version" : "5.0.7"
+      }
+    },
     {
       "identity" : "swift-argument-parser",
       "kind" : "remoteSourceControl",
@@ -22,10 +31,10 @@
     {
       "identity" : "whisperkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/argmaxinc/whisperkit",
+      "location" : "https://github.com/argmaxinc/WhisperKit",
       "state" : {
         "branch" : "main",
-        "revision" : "a7e38587b50361ad7c50f2ff4b3669b70fba1728"
+        "revision" : "936ec3f496c8812b8bf3280a1e516f160e71e744"
       }
     }
   ],

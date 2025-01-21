@@ -12,8 +12,9 @@ import SwiftData
 struct ContentView: View {
     @EnvironmentObject private var menuBarManager: MenuBarManager
     @EnvironmentObject private var permissionsManager: AudioPermissionsManager
-    @StateObject private var manager = WhisperManager()
-
+    @EnvironmentObject private var whisperManager: WhisperManager
+    @EnvironmentObject private var ollamaManager: OllamaManager
+    
     var body: some View {
         VStack(spacing: 20) {
             if !permissionsManager.microphonePermissionGranted || !permissionsManager.systemAudioPermissionGranted {
@@ -32,10 +33,10 @@ struct ContentView: View {
                     action: permissionsManager.requestSystemAudioPermission
                 )
             }
-            else if !manager.isModelLoaded {
-                ModelDownload(manager: manager)
+            else if !whisperManager.isModelLoaded || !ollamaManager.isModelLoaded{
+                ModelDownloadSection()
             } else {
-                NotesList()
+                NotesListSection()
             }
         }
         .frame(width: 600, height: 400)

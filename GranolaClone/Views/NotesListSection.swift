@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct NotesList: View {
+struct NotesListSection: View {
     @Environment(\.modelContext) var modelContext
     @Query var notes: [Note]
     @State private var path = [Note]()
@@ -22,7 +22,7 @@ struct NotesList: View {
                 .onDelete(perform: deleteNote)
             }
             .navigationTitle("Notes List")
-            .navigationDestination(for: Note.self, destination: NoteDetails.init)
+            .navigationDestination(for: Note.self, destination: NoteDetailSection.init)
             .toolbar {
                 Button("Add", systemImage: "plus", action: addNote)
             }

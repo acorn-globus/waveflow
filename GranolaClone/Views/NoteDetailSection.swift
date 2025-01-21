@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct NoteDetails: View {
+struct NoteDetailSection: View {
     @Bindable var note: Note
     var body: some View {
         HStack {

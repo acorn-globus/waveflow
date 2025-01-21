@@ -10,5 +10,13 @@
 	<string>We need system audio access to transcribe audio from your system.</string>
     <key>NSAppleMusicUsageDescription</key>
     <string>We need access to save audio recordings</string>
+    <!-- To run ollama server locally  -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+        <key>NSLocalNetworkUsageDescription</key>
+        <string>This app needs to access your local network to run the Ollama server.</string>
+    </dict>
 </dict>
 </plist>

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		830E399F2D3F527600DD39E0 /* OllamaKit in Frameworks */ = {isa = PBXBuildFile; productRef = 830E399E2D3F527600DD39E0 /* OllamaKit */; };
+		83BE857A2D3FEB63008B4B1F /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 83BE85792D3FEB63008B4B1F /* MarkdownUI */; };
 		83E977E62D2FE96B00F21592 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 83E977E52D2FE96B00F21592 /* WhisperKit */; };
 /* End PBXBuildFile section */
 
@@ -101,6 +102,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				83BE857A2D3FEB63008B4B1F /* MarkdownUI in Frameworks */,
 				83E977E62D2FE96B00F21592 /* WhisperKit in Frameworks */,
 				830E399F2D3F527600DD39E0 /* OllamaKit in Frameworks */,
 			);
@@ -168,6 +170,7 @@
 			packageProductDependencies = (
 				83E977E52D2FE96B00F21592 /* WhisperKit */,
 				830E399E2D3F527600DD39E0 /* OllamaKit */,
+				83BE85792D3FEB63008B4B1F /* MarkdownUI */,
 			);
 			productName = GranolaClone;
 			productReference = 839806982D2D6EAB00E2BE1E /* GranolaClone.app */;
@@ -254,6 +257,7 @@
 			packageReferences = (
 				83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */,
 				8377BE4E2D3E7EF50023F5A1 /* XCRemoteSwiftPackageReference "OllamaKit" */,
+				83BE85782D3FEB63008B4B1F /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 839806992D2D6EAB00E2BE1E /* Products */;
@@ -615,6 +619,14 @@
 				minimumVersion = 5.0.7;
 			};
 		};
+		83BE85782D3FEB63008B4B1F /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = exactVersion;
+				version = 2.4.1;
+			};
+		};
 		83E977E42D2FE96B00F21592 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
@@ -630,6 +642,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8377BE4E2D3E7EF50023F5A1 /* XCRemoteSwiftPackageReference "OllamaKit" */;
 			productName = OllamaKit;
+		};
+		83BE85792D3FEB63008B4B1F /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83BE85782D3FEB63008B4B1F /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 		83E977E52D2FE96B00F21592 /* WhisperKit */ = {
 			isa = XCSwiftPackageProductDependency;

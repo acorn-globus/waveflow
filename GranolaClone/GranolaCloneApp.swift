@@ -1,10 +1,3 @@
-//
-//  GranolaCloneApp.swift
-//  GranolaClone
-//
-//  Created by Partha Praharaj on 07/01/25.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -15,6 +8,7 @@ struct GranolaCloneApp: App {
     @StateObject private var permissionsManager = AudioPermissionsManager()
     @StateObject private var whisperManager = WhisperManager()
     @StateObject private var ollamaManager = OllamaManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -25,5 +19,11 @@ struct GranolaCloneApp: App {
                 .environmentObject(ollamaManager)
         }
         .modelContainer(for: Note.self)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .background {
+                // App is entering background state, clean up resources
+                ollamaManager.shutdown()
+            } 
+        }
     }
 }

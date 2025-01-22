@@ -39,7 +39,7 @@ struct ContentView: View {
                 NotesListSection()
             }
         }
-        .frame(width: 600, height: 400)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
 //        .onChange(of: menuBarManager.isListening) { _, isListening in
 //            if isListening {
 //                print("Starting recording...CV")

@@ -12,7 +12,10 @@ enum OllamaError: Error {
 
 @MainActor
 class OllamaManager: ObservableObject {
-    private let defaultModel = "llama3.2"
+//    private let defaultModel = "llama3.2"
+//    private let defaultModel = "gemma2:2b"
+//    private let defaultModel = "phi3:mini"
+    private let defaultModel = "mistral"
     private var ollamaKit: OllamaKit?
     private let baseUrl = URL(string: "http://localhost:11434")
     private var serverProcess: Process = Process()
@@ -23,6 +26,7 @@ class OllamaManager: ObservableObject {
     @Published var isDownloading = false
     @Published var installationSteps: [String] = []
     @Published var summaryData = ""
+    @Published var isGeneratingSummary: Bool = false
     
     init() {
         setupOllama()
@@ -118,7 +122,7 @@ class OllamaManager: ObservableObject {
         guard let ollamaKit = ollamaKit else {
             throw OllamaError.serverStartFailed
         }
-
+        isGeneratingSummary = true
         summaryData = ""
         let reqData = OKGenerateRequestData(model: defaultModel, prompt: prompt)
         
@@ -130,8 +134,10 @@ class OllamaManager: ObservableObject {
                     print("Response Text: \(responseData.response)")
                     summaryData = responseData.response
                 }
+                isGeneratingSummary = false
             } catch {
                 // Handle error
+                isGeneratingSummary = false
                 throw OllamaError.generateResponseFailed
             }
         }

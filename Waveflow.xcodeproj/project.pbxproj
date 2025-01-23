@@ -42,23 +42,23 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		839806982D2D6EAB00E2BE1E /* GranolaClone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GranolaClone.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		839806AB2D2D6EAC00E2BE1E /* GranolaCloneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GranolaCloneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		839806B52D2D6EAC00E2BE1E /* GranolaCloneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GranolaCloneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		839806982D2D6EAB00E2BE1E /* Waveflow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Waveflow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		839806AB2D2D6EAC00E2BE1E /* WaveflowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WaveflowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		839806B52D2D6EAC00E2BE1E /* WaveflowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WaveflowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		83BE85772D3FA5E9008B4B1F /* Exceptions for "Resources" folder in "GranolaClone" target */ = {
+		83BE85772D3FA5E9008B4B1F /* Exceptions for "Resources" folder in "Waveflow" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ollama/ollama,
 			);
-			target = 839806972D2D6EAB00E2BE1E /* GranolaClone */;
+			target = 839806972D2D6EAB00E2BE1E /* Waveflow */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		83BE85762D3FA5DA008B4B1F /* Exceptions for "Resources" folder in "Copy Files" phase from "GranolaClone" target */ = {
+		83BE85762D3FA5DA008B4B1F /* Exceptions for "Resources" folder in "Copy Files" phase from "Waveflow" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			attributesByRelativePath = {
 				ollama/ollama = (CodeSignOnCopy, );
@@ -89,8 +89,8 @@
 		83BE856D2D3F7E0E008B4B1F /* Resources */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				83BE85772D3FA5E9008B4B1F /* Exceptions for "Resources" folder in "GranolaClone" target */,
-				83BE85762D3FA5DA008B4B1F /* Exceptions for "Resources" folder in "Copy Files" phase from "GranolaClone" target */,
+				83BE85772D3FA5E9008B4B1F /* Exceptions for "Resources" folder in "Waveflow" target */,
+				83BE85762D3FA5DA008B4B1F /* Exceptions for "Resources" folder in "Copy Files" phase from "Waveflow" target */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -139,9 +139,9 @@
 		839806992D2D6EAB00E2BE1E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				839806982D2D6EAB00E2BE1E /* GranolaClone.app */,
-				839806AB2D2D6EAC00E2BE1E /* GranolaCloneTests.xctest */,
-				839806B52D2D6EAC00E2BE1E /* GranolaCloneUITests.xctest */,
+				839806982D2D6EAB00E2BE1E /* Waveflow.app */,
+				839806AB2D2D6EAC00E2BE1E /* WaveflowTests.xctest */,
+				839806B52D2D6EAC00E2BE1E /* WaveflowUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -149,9 +149,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		839806972D2D6EAB00E2BE1E /* GranolaClone */ = {
+		839806972D2D6EAB00E2BE1E /* Waveflow */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 839806BF2D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "GranolaClone" */;
+			buildConfigurationList = 839806BF2D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "Waveflow" */;
 			buildPhases = (
 				839806942D2D6EAB00E2BE1E /* Sources */,
 				839806952D2D6EAB00E2BE1E /* Frameworks */,
@@ -166,19 +166,19 @@
 				8398069A2D2D6EAB00E2BE1E /* GranolaClone */,
 				83BE856D2D3F7E0E008B4B1F /* Resources */,
 			);
-			name = GranolaClone;
+			name = Waveflow;
 			packageProductDependencies = (
 				83E977E52D2FE96B00F21592 /* WhisperKit */,
 				830E399E2D3F527600DD39E0 /* OllamaKit */,
 				83BE85792D3FEB63008B4B1F /* MarkdownUI */,
 			);
 			productName = GranolaClone;
-			productReference = 839806982D2D6EAB00E2BE1E /* GranolaClone.app */;
+			productReference = 839806982D2D6EAB00E2BE1E /* Waveflow.app */;
 			productType = "com.apple.product-type.application";
 		};
-		839806AA2D2D6EAC00E2BE1E /* GranolaCloneTests */ = {
+		839806AA2D2D6EAC00E2BE1E /* WaveflowTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 839806C22D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "GranolaCloneTests" */;
+			buildConfigurationList = 839806C22D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "WaveflowTests" */;
 			buildPhases = (
 				839806A72D2D6EAC00E2BE1E /* Sources */,
 				839806A82D2D6EAC00E2BE1E /* Frameworks */,
@@ -192,16 +192,16 @@
 			fileSystemSynchronizedGroups = (
 				839806AE2D2D6EAC00E2BE1E /* GranolaCloneTests */,
 			);
-			name = GranolaCloneTests;
+			name = WaveflowTests;
 			packageProductDependencies = (
 			);
 			productName = GranolaCloneTests;
-			productReference = 839806AB2D2D6EAC00E2BE1E /* GranolaCloneTests.xctest */;
+			productReference = 839806AB2D2D6EAC00E2BE1E /* WaveflowTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		839806B42D2D6EAC00E2BE1E /* GranolaCloneUITests */ = {
+		839806B42D2D6EAC00E2BE1E /* WaveflowUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 839806C52D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "GranolaCloneUITests" */;
+			buildConfigurationList = 839806C52D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "WaveflowUITests" */;
 			buildPhases = (
 				839806B12D2D6EAC00E2BE1E /* Sources */,
 				839806B22D2D6EAC00E2BE1E /* Frameworks */,
@@ -215,11 +215,11 @@
 			fileSystemSynchronizedGroups = (
 				839806B82D2D6EAC00E2BE1E /* GranolaCloneUITests */,
 			);
-			name = GranolaCloneUITests;
+			name = WaveflowUITests;
 			packageProductDependencies = (
 			);
 			productName = GranolaCloneUITests;
-			productReference = 839806B52D2D6EAC00E2BE1E /* GranolaCloneUITests.xctest */;
+			productReference = 839806B52D2D6EAC00E2BE1E /* WaveflowUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -245,7 +245,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 839806932D2D6EAB00E2BE1E /* Build configuration list for PBXProject "GranolaClone" */;
+			buildConfigurationList = 839806932D2D6EAB00E2BE1E /* Build configuration list for PBXProject "Waveflow" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -264,9 +264,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				839806972D2D6EAB00E2BE1E /* GranolaClone */,
-				839806AA2D2D6EAC00E2BE1E /* GranolaCloneTests */,
-				839806B42D2D6EAC00E2BE1E /* GranolaCloneUITests */,
+				839806972D2D6EAB00E2BE1E /* Waveflow */,
+				839806AA2D2D6EAC00E2BE1E /* WaveflowTests */,
+				839806B42D2D6EAC00E2BE1E /* WaveflowUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -322,12 +322,12 @@
 /* Begin PBXTargetDependency section */
 		839806AD2D2D6EAC00E2BE1E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 839806972D2D6EAB00E2BE1E /* GranolaClone */;
+			target = 839806972D2D6EAB00E2BE1E /* Waveflow */;
 			targetProxy = 839806AC2D2D6EAC00E2BE1E /* PBXContainerItemProxy */;
 		};
 		839806B72D2D6EAC00E2BE1E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 839806972D2D6EAB00E2BE1E /* GranolaClone */;
+			target = 839806972D2D6EAB00E2BE1E /* Waveflow */;
 			targetProxy = 839806B62D2D6EAC00E2BE1E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -464,7 +464,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GranolaClone/Info.plist;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "We need access to save audio recordings";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need microphone access to transcribe your speech.";
+				INFOPLIST_KEY_NSSystemExtensionUsageDescription = "We need system audio access to transcribe audio from your system.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -491,14 +494,17 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GranolaClone/Info.plist;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "We need access to save audio recordings";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need microphone access to transcribe your speech.";
+				INFOPLIST_KEY_NSSystemExtensionUsageDescription = "We need system audio access to transcribe audio from your system.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.acornglobus.GranolaClone;
+				PRODUCT_BUNDLE_IDENTIFIER = com.acornglobus.Waveflow;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -518,7 +524,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GranolaClone.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GranolaClone";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Waveflow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Waveflow";
 			};
 			name = Debug;
 		};
@@ -535,7 +541,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GranolaClone.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GranolaClone";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Waveflow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Waveflow";
 			};
 			name = Release;
 		};
@@ -572,7 +578,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		839806932D2D6EAB00E2BE1E /* Build configuration list for PBXProject "GranolaClone" */ = {
+		839806932D2D6EAB00E2BE1E /* Build configuration list for PBXProject "Waveflow" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				839806BD2D2D6EAC00E2BE1E /* Debug */,
@@ -581,7 +587,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		839806BF2D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "GranolaClone" */ = {
+		839806BF2D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "Waveflow" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				839806C02D2D6EAC00E2BE1E /* Debug */,
@@ -590,7 +596,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		839806C22D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "GranolaCloneTests" */ = {
+		839806C22D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "WaveflowTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				839806C32D2D6EAC00E2BE1E /* Debug */,
@@ -599,7 +605,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		839806C52D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "GranolaCloneUITests" */ = {
+		839806C52D2D6EAC00E2BE1E /* Build configuration list for PBXNativeTarget "WaveflowUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				839806C62D2D6EAC00E2BE1E /* Debug */,

@@ -17,15 +17,14 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            NotesListSection()
-//            if !permissionsManager.microphonePermissionGranted || !permissionsManager.systemAudioPermissionGranted {
-//                PermissionSection()
-//            }
-//            else if !whisperManager.isModelLoaded || !ollamaManager.isModelLoaded{
-//                ModelDownloadSection()
-//            } else {
-//                NotesListSection()
-//            }
+            if !permissionsManager.microphonePermissionGranted || !permissionsManager.systemAudioPermissionGranted {
+                PermissionSection()
+            }
+            else if !whisperManager.isModelLoaded || !ollamaManager.isModelLoaded{
+                ModelDownloadSection()
+            } else {
+                NotesListSection()
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.textBackgroundColor))

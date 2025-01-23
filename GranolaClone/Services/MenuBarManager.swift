@@ -73,6 +73,7 @@ class MenuBarManager: ObservableObject {
         if let window = NSApplication.shared.windows.first {
             window.makeKeyAndOrderFront(nil)
         }
+        
     }
     
     @objc private func quitApp() {

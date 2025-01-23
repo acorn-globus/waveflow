@@ -17,6 +17,7 @@ struct GranolaCloneApp: App {
                 .environmentObject(permissionsManager)
                 .environmentObject(whisperManager)
                 .environmentObject(ollamaManager)
+                .preferredColorScheme(.light)
         }
         .modelContainer(for: Note.self)
         .onChange(of: scenePhase) { oldPhase, newPhase in

@@ -9,6 +9,10 @@ struct NoteDetailSection: View {
     @EnvironmentObject private var whisperManager: WhisperManager
     @EnvironmentObject private var ollamaManager: OllamaManager
     @Query(sort: \TranscriptionMessage.createdAt) private var messages: [TranscriptionMessage]
+    
+    @FocusState private var isTitleFocused: Bool
+    @FocusState private var isBodyFocused: Bool
+    @State private var isTextCopied: Bool = false
         
     init(note: Note) {
         self._note = Bindable(wrappedValue: note)
@@ -31,30 +35,65 @@ struct NoteDetailSection: View {
                 ZStack{
                     ScrollView {
                         VStack(alignment: .leading) {
-                            TextEditor(text: $note.title)
-                                .font(.title)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 0)
-                            if selectedTab == .summary && !note.summary.isEmpty {
+                            if selectedTab == Tab.summary && !note.summary.isEmpty {
                                 Markdown(note.summary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }else{
-                                TextEditor(text: $note.body)
-                                    .frame(maxHeight: .infinity, alignment: .leading)
-                                    .font(.body)
+                                ZStack(alignment: .topLeading) {
+                                    TextEditor(text: $note.title)
+                                        .font(.title)
+                                        .background(Color.clear)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 0)
+                                        .focused($isTitleFocused)
+                                    if note.title.isEmpty {
+                                        Text("Untitled Meeting")
+                                            .font(.title)
+                                            .foregroundColor(.gray)
+                                            .padding(.horizontal, 5)
+                                            .onTapGesture {
+                                                isTitleFocused = true
+                                            }
+                                    }
+
+                                }
+                                .padding(.bottom, 4)
+                                ZStack(alignment: .topLeading) {
+                                    TextEditor(text: $note.body)
+                                        .frame(maxHeight: .infinity, alignment: .leading)
+                                        .font(.body)
+                                        .focused($isBodyFocused)
+                                        .onAppear {
+                                            isBodyFocused = true
+                                        }
+                                    if note.body.isEmpty {
+                                        Text("Enter Your Notes Here...")
+                                            .font(.body)
+                                            .foregroundColor(.gray)
+                                            .padding(.horizontal, 6)
+                                            .onTapGesture {
+                                                isBodyFocused = true
+                                            }
+                                    }
+                                }
                             }
                         }
-                        .padding()
+                        .padding(48)
                         .padding(.bottom, 64)
                     }
-                    if selectedTab == .summary {
+                    if selectedTab == Tab.summary {
                         VStack {
                             HStack {
                                 Spacer()
                                 Button(action: {
+                                    isTextCopied = true
                                     copyToClipboard(note.summary)
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                        isTextCopied = false
+                                    }
                                 }) {
-                                    Image(systemName: "doc.on.doc")
+                                    Image(systemName: isTextCopied ? "checkmark.circle" : "doc.on.doc")
+                                        .padding(2)
                                 }.offset(x: -10, y: 10)
                             }
                             Spacer()
@@ -120,6 +159,10 @@ struct NoteDetailSection: View {
         .onAppear {
             if whisperManager.isRecording || ollamaManager.isGeneratingSummary || !note.summary.isEmpty { return }
             whisperManager.toggleRecording()
+        }
+        .onTapGesture {
+            isTitleFocused = false
+            isBodyFocused = false
         }
     }
     

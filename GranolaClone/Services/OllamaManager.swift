@@ -55,11 +55,12 @@ class OllamaManager: ObservableObject {
         
         do {
             try serverProcess.run()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-                self?.initializeOllamaKit()
-            }
         } catch {
             print("Failed to start Ollama server: \(error)")
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            self?.initializeOllamaKit()
         }
     }
     

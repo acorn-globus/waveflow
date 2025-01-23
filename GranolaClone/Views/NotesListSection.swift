@@ -3,7 +3,9 @@ import SwiftData
 
 struct NotesListSection: View {
     @Environment(\.modelContext) var modelContext
-    @Query var notes: [Note]
+    @EnvironmentObject private var menuBarManager: MenuBarManager
+    @EnvironmentObject private var whisperManager: WhisperManager
+    @Query(sort: \Note.createdAt) var notes: [Note]
     @State private var path = [Note]()
 
     var body: some View {
@@ -27,9 +29,17 @@ struct NotesListSection: View {
                 Button("Add", systemImage: "plus", action: addNote)
             }
         }
+        .onChange(of: menuBarManager.isListening) { _, isListening in
+            if isListening {
+                addNote()
+            }
+        }
     }
 
     func addNote() {
+        if whisperManager.isRecording {
+            return
+        }
         let newNote = Note(title: "Untitled", body: "")
         modelContext.insert(newNote)
         path = [newNote]

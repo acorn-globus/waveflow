@@ -53,37 +53,11 @@ struct TranscriptionSection: View {
                         }
                         .padding()
                     }
-                    if currentNote.summary.isEmpty {
-                        Button(action: {
-                            whisperManager.toggleRecording()
-                        }) {
-                            HStack {
-                                Image(systemName: whisperManager.isRecording ? "stop.circle.fill" : "record.circle")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 44, height: 44)
-                                    .foregroundColor(whisperManager.isRecording ? .red : .green)
-                                
-                                Text(whisperManager.isRecording ? "Stop Recording" : "Start Recording")
-                                    .font(.headline)
-                            }
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                    }
-                    if !whisperManager.isRecording {
-                        Button("Generate Summary",action: {
-                            Task {
-                                await generateSummary()
-                            }
-                        })
-                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding()
+        .background(Color(.secondaryBackground))
         .onChange(of: whisperManager.micConfirmedTextReset) {  _, micText in
             guard !micText.isEmpty else { return }
 
@@ -110,37 +84,5 @@ struct TranscriptionSection: View {
             currentNote.summary.append(contentsOf: summaryData)
             modelContext.insert(currentNote)
         }
-    }
-    
-    private func generateSummary() async {
-        guard !whisperManager.isRecording else { return }
-        currentNote.summary = ""
-        modelContext.insert(currentNote)
-
-        var transcript = ""
-        
-        for message in messages {
-            let currentMessage = "\(message.source.capitalized): \(message.text) \n"
-            transcript += currentMessage
-        }
-        
-        let prompt = """
-            Summarize the provided meeting transcript to highlight key points, focus on creating a clear and engaging summary in Markdown format following the given instructions.
-        
-            # Important Instructions 
-            1. Create a relevant and descriptive title for the summary and include it in the first line in a `#` tag. 
-            2. Use meaningful subheadings to organize key points clearly and logically.
-            3. Highlight important details, decisions, and action items using bullet points under each subheading.
-            4. Thoughtfully integrate the notes provided by the user into the summary to enhance its quality.
-            5. Return the output strictly in Markdown format without any introductory or closing remarks.
-        
-            ### Transcript
-            \(transcript)
-            
-            ### User Notes
-            \(currentNote.body)
-        """
-        
-        try? await ollamaManager.generateResponse(prompt: prompt)
     }
 }

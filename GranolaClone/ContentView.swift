@@ -18,20 +18,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 20) {
             if !permissionsManager.microphonePermissionGranted || !permissionsManager.systemAudioPermissionGranted {
-                Text("Audio Permissions")
-                    .font(.title)
-                    .padding()
-
-                PermissionSection(
-                    title: "Microphone Access",
-                    granted: permissionsManager.microphonePermissionGranted,
-                    action: permissionsManager.requestMicrophonePermission
-                )
-                PermissionSection(
-                    title: "Screen Recording Access",
-                    granted: permissionsManager.systemAudioPermissionGranted,
-                    action: permissionsManager.requestSystemAudioPermission
-                )
+                PermissionSection()
             }
             else if !whisperManager.isModelLoaded || !ollamaManager.isModelLoaded{
                 ModelDownloadSection()
@@ -40,14 +27,6 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-//        .onChange(of: menuBarManager.isListening) { _, isListening in
-//            if isListening {
-//                print("Starting recording...CV")
-//                transcriptionManager.startRecording()
-//            } else {
-//                transcriptionManager.stopRecording()
-//            }
-//        }
     }
 }
 

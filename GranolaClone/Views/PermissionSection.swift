@@ -8,18 +8,19 @@
 import SwiftUI
 
 struct PermissionSection: View {
-    let title: String
-    let granted: Bool
-    let action: () -> Void
+    @EnvironmentObject private var permissionsManager: AudioPermissionsManager
     
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 16) {
+            Text("Audio Permissions")
+                .font(.title)
+                .padding()
             HStack {
-                Text(title)
+                Text("Microphone Access")
                 Spacer()
-                if !granted {
+                if !permissionsManager.microphonePermissionGranted {
                     Button("Request Permission") {
-                        action()
+                        permissionsManager.requestMicrophonePermission()
                     }
                     .buttonStyle(.borderedProminent)
                 }else {
@@ -28,6 +29,19 @@ struct PermissionSection: View {
                 }
                 
             }
+            HStack {
+                Text("Screen Recording Access")
+                Spacer()
+                if !permissionsManager.systemAudioPermissionGranted {
+                    Button("Request Permission") {
+                        permissionsManager.requestSystemAudioPermission()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                }
+            }
         }
         .padding(.horizontal)
         .frame(width: 600)
@@ -35,8 +49,5 @@ struct PermissionSection: View {
 }
 
 #Preview {
-    PermissionSection(
-        title: "Some Access",
-        granted: false,
-        action: {}
-    )}
+    PermissionSection()
+}

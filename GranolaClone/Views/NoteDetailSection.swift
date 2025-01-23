@@ -6,10 +6,24 @@ struct NoteDetailSection: View {
     @Bindable var note: Note
     @State private var copiedMessage = ""
     @State private var selectedTab: Tab = .summary
+    @EnvironmentObject private var whisperManager: WhisperManager
+    @EnvironmentObject private var ollamaManager: OllamaManager
+    @EnvironmentObject private var menuBarManager: MenuBarManager
+    @Query(sort: \TranscriptionMessage.createdAt) private var messages: [TranscriptionMessage]
         
-    enum Tab: String {
-        case summary = "Summary"
-        case body = "Body"
+    init(note: Note) {
+        self._note = Bindable(wrappedValue: note)
+        let id = note.id
+        let predicate = #Predicate<TranscriptionMessage> { message in
+            message.note?.id == id
+        }
+        
+        _messages = Query(filter: predicate, sort: [SortDescriptor(\.createdAt)] )
+    }
+    
+    enum Tab: String, CaseIterable {
+        case body = "My Notes"
+        case summary = "AI Generated"
     }
     
     var body: some View {
@@ -32,7 +46,7 @@ struct NoteDetailSection: View {
                             }
                         }
                         .padding()
-                        .padding(.bottom, 42)
+                        .padding(.bottom, 64)
                     }
                     if selectedTab == .summary {
                         VStack {
@@ -51,31 +65,137 @@ struct NoteDetailSection: View {
                     if(!note.summary.isEmpty){
                         VStack {
                             Spacer()
-                            Picker("", selection: $selectedTab) {
-                                Text("Summary").tag(Tab.summary)
-                                Text("Body").tag(Tab.body)
-                            }
-                            .pickerStyle(SegmentedPickerStyle())
-                            .padding()
-                            .background(Color(.textBackgroundColor))
-                        }
+                            CustomPickerView()
+                        }.padding()
                     }
-                }.frame(width: geometry.size.width * 0.6)
+                    else if(!ollamaManager.isGeneratingSummary){
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Button(action: {
+                                    whisperManager.toggleRecording()
+                                }) {
+                                    Image(systemName: whisperManager.isRecording ? "pause.fill" : "play.fill")
+                                        .frame(width: 44, height: 44)
+                                        .foregroundColor(whisperManager.isRecording ? .red : .green)
+                                    Text(whisperManager.isRecording ? "Stop" : "Record")
+                                        .padding(.trailing, 8)
+                                }
+                                .cornerRadius(100)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 100)
+                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                )
+                                if !whisperManager.isRecording && !note.messages.isEmpty {
+                                    Button(action: {
+                                        Task {
+                                            await generateSummary()
+                                        }
+                                    }) {
+                                        Image(systemName: "sparkles")
+                                            .frame(width: 44, height: 44)
+                                        Text("Generate Summary")
+                                            .padding(.trailing, 8)
+                                    }
+                                    .background(Color.blue)
+                                    .cornerRadius(100)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 100)
+                                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                    )
+                                }
+                            }
+                        }.padding()
+                    }
+                }
+                .frame(width: geometry.size.width * 0.6)
+                .background(Color(.textBackgroundColor))
                 Divider().layoutPriority(0)
                 TranscriptionSection(currentNote: note)
                     .frame(width: geometry.size.width * 0.4)
 
             }
             .navigationTitle(note.title)
-            .background(Color(.textBackgroundColor))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .onAppear {
+            if whisperManager.isRecording || ollamaManager.isGeneratingSummary || !note.summary.isEmpty { return }
+            whisperManager.toggleRecording()
+        }
+        .onChange(of: menuBarManager.isListening) { _, isListening in
+            whisperManager.toggleRecording()
+        }
+    }
+    
+    @ViewBuilder
+    private func CustomPickerView() -> some View {
+        HStack(spacing: 8) {
+            ForEach(Tab.allCases, id: \.self) { tab in
+                segment(for: tab)
+            }
+        }
+        .frame(width: 260)
+        .padding(6)
+        .background(Color(.secondaryBackground))
+        .cornerRadius(24)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    @ViewBuilder
+    private func segment(for tab: Tab) -> some View {
+        HStack{
+            Image(systemName: tab == .body ?"list.bullet": "sparkles")
+            Text(tab.rawValue)
+        }
+        .foregroundColor(selectedTab == tab ? .white : .black)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(selectedTab == tab ? Color.blue : Color(.secondaryBackground))
+            .cornerRadius(20)
+            .onTapGesture {
+                withAnimation {
+                    selectedTab = tab
+                }
+            }
     }
     
     private func copyToClipboard(_ text: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+    }
+    
+    private func generateSummary() async {
+        guard !whisperManager.isRecording else { return }
+
+        var transcript = ""
+        
+        for message in messages {
+            let currentMessage = "\(message.source.capitalized): \(message.text) \n"
+            transcript += currentMessage
+        }
+        
+        let prompt = """
+            Summarize the provided meeting transcript to highlight key points, focus on creating a clear and engaging summary in Markdown format following the given instructions.
+        
+            # Important Instructions 
+            1. Create a relevant and descriptive title for the summary and include it in the first line in a `#` tag. 
+            2. Use meaningful subheadings to organize key points clearly and logically.
+            3. Highlight important details, decisions, and action items using bullet points under each subheading.
+            4. Thoughtfully integrate the notes provided by the user into the summary to enhance its quality.
+            5. Return the output strictly in Markdown format without any introductory or closing remarks.
+        
+            ### Transcript
+            \(transcript)
+            
+            ### User Notes
+            \(note.body)
+        """
+        
+        try? await ollamaManager.generateResponse(prompt: prompt)
     }
 }
 

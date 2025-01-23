@@ -27,6 +27,8 @@ struct MessageBubble: View {
                 .cornerRadius(8)
                 
                 Text(message.createdAt.formatted(date: .omitted, time: .shortened))
+                    .opacity(0.4)
+                    .font(.caption)
             }
             .frame(alignment: message.source == "microphone" ? .trailing : .leading)
             

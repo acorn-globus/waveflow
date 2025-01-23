@@ -3,7 +3,7 @@ import AppKit
 
 class MenuBarManager: ObservableObject {
     private var statusItem: NSStatusItem?
-    @Published var isListening: Bool = false
+    @Published var createNewNoteCount = 0
     
     init() {
         // Ensure we're on the main thread
@@ -17,7 +17,8 @@ class MenuBarManager: ObservableObject {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Transcription")
+            button.image = NSImage(named: "menuBarIcon")
+//            button.image?.isTemplate = true
         }
         
         setupMenu()
@@ -27,20 +28,20 @@ class MenuBarManager: ObservableObject {
         let menu = NSMenu()
         
         // Start/Stop Recording Menu Item
-        let toggleItem = NSMenuItem(
-            title: "Start Listening",
-            action: #selector(toggleListening),
-            keyEquivalent: "t"
+        let createNewItem = NSMenuItem(
+            title: "Create a New Note",
+            action: #selector(createNewNote),
+            keyEquivalent: "n"
         )
-        toggleItem.target = self
-        menu.addItem(toggleItem)
+        createNewItem.target = self
+        menu.addItem(createNewItem)
         
         // Separator
         menu.addItem(NSMenuItem.separator())
         
         // Show/Hide Window
         let showWindowItem = NSMenuItem(
-            title: "Show Transcription Window",
+            title: "Show All Notes",
             action: #selector(showMainWindow),
             keyEquivalent: "s"
         )
@@ -60,25 +61,12 @@ class MenuBarManager: ObservableObject {
         statusItem?.menu = menu
     }
     
-    @objc private func toggleListening() {
+    @objc private func createNewNote() {
         DispatchQueue.main.async {
-            self.isListening.toggle()
-            self.updateMenuBar()
+            self.createNewNoteCount += 1
         }
     }
     
-    private func updateMenuBar() {
-        if let button = statusItem?.button {
-            button.image = NSImage(
-                systemSymbolName: isListening ? "mic.fill" : "mic",
-                accessibilityDescription: "Transcription"
-            )
-            
-            if let toggleItem = statusItem?.menu?.item(at: 0) {
-                toggleItem.title = isListening ? "Stop Listening" : "Start Listening"
-            }
-        }
-    }
     
     @objc private func showMainWindow() {
         NSApp.activate(ignoringOtherApps: true)

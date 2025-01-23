@@ -29,16 +29,14 @@ struct NotesListSection: View {
                 Button("Add", systemImage: "plus", action: addNote)
             }
         }
-        .onChange(of: menuBarManager.isListening) { _, isListening in
-            if isListening {
-                addNote()
-            }
+        .onChange(of: menuBarManager.createNewNoteCount) { _, newNoteCount in
+            if whisperManager.isRecording { return }
+            addNote()
         }
     }
 
     func addNote() {
-        if whisperManager.isRecording { return }
-        let newNote = Note(title: "Untitled", body: "")
+        let newNote = Note(title: "", body: "")
         modelContext.insert(newNote)
         path = [newNote]
     }

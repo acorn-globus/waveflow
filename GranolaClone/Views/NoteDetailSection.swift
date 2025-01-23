@@ -8,7 +8,6 @@ struct NoteDetailSection: View {
     @State private var selectedTab: Tab = .summary
     @EnvironmentObject private var whisperManager: WhisperManager
     @EnvironmentObject private var ollamaManager: OllamaManager
-    @EnvironmentObject private var menuBarManager: MenuBarManager
     @Query(sort: \TranscriptionMessage.createdAt) private var messages: [TranscriptionMessage]
         
     init(note: Note) {
@@ -120,9 +119,6 @@ struct NoteDetailSection: View {
         }
         .onAppear {
             if whisperManager.isRecording || ollamaManager.isGeneratingSummary || !note.summary.isEmpty { return }
-            whisperManager.toggleRecording()
-        }
-        .onChange(of: menuBarManager.isListening) { _, isListening in
             whisperManager.toggleRecording()
         }
     }

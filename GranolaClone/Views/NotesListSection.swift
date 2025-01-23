@@ -37,9 +37,7 @@ struct NotesListSection: View {
     }
 
     func addNote() {
-        if whisperManager.isRecording {
-            return
-        }
+        if whisperManager.isRecording { return }
         let newNote = Note(title: "Untitled", body: "")
         modelContext.insert(newNote)
         path = [newNote]

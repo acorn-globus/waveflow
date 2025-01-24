@@ -234,17 +234,22 @@ struct NoteDetailSection: View {
             Summarize the provided meeting transcript to highlight key points, focus on creating a clear and engaging summary in Markdown format following the given instructions.
         
             # Important Instructions 
-            1. Create a relevant and descriptive title for the summary and include it in the first line in a `#` tag. 
-            2. Use meaningful subheadings to organize key points clearly and logically.
-            3. Highlight important details, decisions, and action items using bullet points under each subheading.
-            4. Thoughtfully integrate the notes provided by the user into the summary to enhance its quality.
+            1. Title Creation: Create a descriptive and contextually relevant title for the summary and include it in the first line using a # tag. If the meeting context is unclear, generate a general title based on the transcript content.
+            2. Context-Aware Structure: Automatically adapt the structure of the summary based on the transcript's topics and context.
+            2. Organized Subheadings: Use meaningful subheadings to group key points logically, reflecting the flow and purpose of the meeting.
+            3. Highlight Key Points: Under each subheading, include:
+                    - Important details and insights discussed during the meeting.
+                    - For each key point,try including relevant subpoints or additional details to add depth and clarity.
+            4. User Notes Integration: Seamlessly incorporate the provided user notes to enhance the summary’s clarity and depth.
             5. Return the output strictly in Markdown format without any introductory or closing remarks.
         
-            ### Transcript
-            \(transcript)
-            
-            ### User Notes
-            \(note.body)
+            # Input: 
+            - Transcript: \(transcript)
+
+            - User Notes: \(note.body)
+        
+            # Output: 
+            Return the summary strictly in Markdown format without any introductory or closing remarks. Ensure the inclusion of all specified elements, especially the title.
         """
         
         try? await ollamaManager.generateResponse(prompt: prompt)

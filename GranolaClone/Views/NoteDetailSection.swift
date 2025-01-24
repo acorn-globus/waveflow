@@ -38,6 +38,19 @@ struct NoteDetailSection: View {
                             if selectedTab == Tab.summary && !note.summary.isEmpty {
                                 Markdown(note.summary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                if ollamaManager.isGeneratingSummary {
+                                    HStack{
+                                        ProgressView()
+                                            .frame(width: 48, height: 48)
+                                            .foregroundColor(Color.blue)
+                                        Text("Generating Summary...")
+                                    }
+                                    .padding(.horizontal ,24)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue.opacity(0.2))
+                                    .cornerRadius(4)
+                                }
+                                
                             }else{
                                 ZStack(alignment: .topLeading) {
                                     TextEditor(text: $note.title)
@@ -236,54 +249,4 @@ struct NoteDetailSection: View {
         
         try? await ollamaManager.generateResponse(prompt: prompt)
     }
-}
-
-#Preview {
-    NoteDetailSection(note: .init(title: "Example", body: "This is an example note.", summary: """
-Converting Markdown into HTML
-To get started with Ink, all you have to do is to import it, and use its MarkdownParser type to convert any Markdown string into efficiently rendered HTML:
-
-import Ink
-- dsafafaa
-- To get started with Ink, all you have to do is to import it, and use its MarkdownParser type to convert any Markdown string into efficiently rendered HTML:
-        * adsfsdf
-        * dsffdsa
-
-```
-    let markdown: String = ...
-    let parser = MarkdownParser()
-    let html = parser.html(from: markdown)
-```
-That’s it! The resulting HTML can then be displayed as-is, or embedded into some other context — and if that’s all you need Ink for, then no more code is required.
-Converting Markdown into HTML
-To get started with Ink, all you have to do is to import it, and use its MarkdownParser type to convert any Markdown string into efficiently rendered HTML:
-
-import Ink
-- dsafafaa
-- To get started with Ink, all you have to do is to import it, and use its MarkdownParser type to convert any Markdown string into efficiently rendered HTML:
-        * adsfsdf
-        * dsffdsa
-
-```
-    let markdown: String = ...
-    let parser = MarkdownParser()
-    let html = parser.html(from: markdown)
-```
-That’s it! The resulting HTML can then be displayed as-is, or embedded into some other context — and if that’s all you need Ink for, then no more code is required.
-Converting Markdown into HTML
-To get started with Ink, all you have to do is to import it, and use its MarkdownParser type to convert any Markdown string into efficiently rendered HTML:
-
-import Ink
-- dsafafaa
-- To get started with Ink, all you have to do is to import it, and use its MarkdownParser type to convert any Markdown string into efficiently rendered HTML:
-        * adsfsdf
-        * dsffdsa
-
-```
-    let markdown: String = ...
-    let parser = MarkdownParser()
-    let html = parser.html(from: markdown)
-```
-That’s it! The resulting HTML can then be displayed as-is, or embedded into some other context — and if that’s all you need Ink for, then no more code is required.
-"""))
 }

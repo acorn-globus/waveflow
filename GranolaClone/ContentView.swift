@@ -8,7 +8,6 @@
 import SwiftUI
 import SwiftData
 
-@available(macOS 15.0, *)
 struct ContentView: View {
     @EnvironmentObject private var menuBarManager: MenuBarManager
     @EnvironmentObject private var permissionsManager: AudioPermissionsManager
@@ -32,7 +31,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    if #available(macOS 15.0, *) {
-        ContentView()
-    } 
+    ContentView()
 }

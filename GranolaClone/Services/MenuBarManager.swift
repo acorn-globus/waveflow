@@ -18,7 +18,7 @@ class MenuBarManager: ObservableObject {
         
         if let button = statusItem?.button {
             button.image = NSImage(named: "menuBarIcon")
-//            button.image?.isTemplate = true
+            button.image?.isTemplate = true
         }
         
         setupMenu()

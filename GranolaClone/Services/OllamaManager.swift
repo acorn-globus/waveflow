@@ -13,9 +13,9 @@ enum OllamaError: Error {
 @MainActor
 class OllamaManager: ObservableObject {
 //    private let defaultModel = "llama3.2"
-//    private let defaultModel = "gemma2:2b"
+    private let defaultModel = "gemma2:2b"
 //    private let defaultModel = "phi3:mini"
-    private let defaultModel = "mistral"
+//    private let defaultModel = "mistral"
     private var ollamaKit: OllamaKit?
     private let baseUrl = URL(string: "http://localhost:11434")
     private var serverProcess: Process = Process()

@@ -262,13 +262,13 @@ struct NoteDetailSection: View {
             3. Highlight Key Points: Under each subheading, include:
                     - Important details and insights discussed during the meeting.
                     - For each key point,try including relevant subpoints or additional details to add depth and clarity.
-            4. User Notes Integration: Seamlessly incorporate the provided user notes to enhance the summary’s clarity and depth.
+            4. User Written Notes Integration: Seamlessly incorporate the notes written by the user to enhance the summary’s quality.
             5. Return the output strictly in Markdown format without any introductory or closing remarks.
         
             # Input: 
             - Transcript: \(transcript)
 
-            - User Notes: \(note.body)
+            - User Written Notes: \(note.body)
         
             # Output: 
             Return the summary strictly in Markdown format without any introductory or closing remarks. Ensure the inclusion of all specified elements, especially the title.

@@ -237,6 +237,8 @@ struct NotesListSection: View {
                 VStack(alignment: .leading) {
                     Text(note.title)
                         .font(.title3)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                     Text(note.createdAt.formatted(date: .long, time: .omitted))
                         .font(.caption)
                         .foregroundColor(Color.gray)

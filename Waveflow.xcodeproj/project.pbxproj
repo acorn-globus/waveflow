@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		837A56532D438A6400DE1733 /* OllamaKit in Frameworks */ = {isa = PBXBuildFile; productRef = 837A56522D438A6400DE1733 /* OllamaKit */; };
+		837A56572D438AAF00DE1733 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 837A56562D438AAF00DE1733 /* WhisperKit */; };
+		837A56592D438AAF00DE1733 /* whisperkit-cli in Frameworks */ = {isa = PBXBuildFile; productRef = 837A56582D438AAF00DE1733 /* whisperkit-cli */; };
+		837A565B2D438B1100DE1733 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 837A565A2D438B1100DE1733 /* MarkdownUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8371147D2D43873F004BF04C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -23,15 +30,54 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		837114C02D4389EF004BF04C /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = ollama;
+			dstSubfolderSpec = 7;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		837114692D43873D004BF04C /* Waveflow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Waveflow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8371147C2D43873F004BF04C /* WaveflowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WaveflowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		837114862D43873F004BF04C /* WaveflowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WaveflowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		837114BF2D4389E8004BF04C /* Exceptions for "Waveflow" folder in "Waveflow" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/ollama/ollama,
+			);
+			target = 837114682D43873D004BF04C /* Waveflow */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		837114C22D4389F9004BF04C /* Exceptions for "Waveflow" folder in "Copy Files" phase from "Waveflow" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			attributesByRelativePath = {
+				Resources/ollama/ollama = (CodeSignOnCopy, );
+			};
+			buildPhase = 837114C02D4389EF004BF04C /* CopyFiles */;
+			membershipExceptions = (
+				Resources/ollama/ollama,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8371146B2D43873D004BF04C /* Waveflow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				837114BF2D4389E8004BF04C /* Exceptions for "Waveflow" folder in "Waveflow" target */,
+				837114C22D4389F9004BF04C /* Exceptions for "Waveflow" folder in "Copy Files" phase from "Waveflow" target */,
+			);
 			path = Waveflow;
 			sourceTree = "<group>";
 		};
@@ -52,6 +98,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				837A56572D438AAF00DE1733 /* WhisperKit in Frameworks */,
+				837A56532D438A6400DE1733 /* OllamaKit in Frameworks */,
+				837A56592D438AAF00DE1733 /* whisperkit-cli in Frameworks */,
+				837A565B2D438B1100DE1733 /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +152,7 @@
 				837114652D43873D004BF04C /* Sources */,
 				837114662D43873D004BF04C /* Frameworks */,
 				837114672D43873D004BF04C /* Resources */,
+				837114C02D4389EF004BF04C /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -112,6 +163,10 @@
 			);
 			name = Waveflow;
 			packageProductDependencies = (
+				837A56522D438A6400DE1733 /* OllamaKit */,
+				837A56562D438AAF00DE1733 /* WhisperKit */,
+				837A56582D438AAF00DE1733 /* whisperkit-cli */,
+				837A565A2D438B1100DE1733 /* MarkdownUI */,
 			);
 			productName = Waveflow;
 			productReference = 837114692D43873D004BF04C /* Waveflow.app */;
@@ -195,6 +250,11 @@
 			);
 			mainGroup = 837114602D43873D004BF04C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				837A56512D438A6400DE1733 /* XCRemoteSwiftPackageReference "OllamaKit" */,
+				837A56542D438A7A00DE1733 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				837A56552D438AAF00DE1733 /* XCRemoteSwiftPackageReference "WhisperKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8371146A2D43873D004BF04C /* Products */;
 			projectDirPath = "";
@@ -399,6 +459,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Waveflow/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Waveflow/Info.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -419,12 +480,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Waveflow/Waveflow.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Waveflow/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Waveflow/Info.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -543,6 +606,56 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		837A56512D438A6400DE1733 /* XCRemoteSwiftPackageReference "OllamaKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kevinhermawan/OllamaKit.git";
+			requirement = {
+				kind = exactVersion;
+				version = 5.0.7;
+			};
+		};
+		837A56542D438A7A00DE1733 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = exactVersion;
+				version = 2.4.1;
+			};
+		};
+		837A56552D438AAF00DE1733 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		837A56522D438A6400DE1733 /* OllamaKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 837A56512D438A6400DE1733 /* XCRemoteSwiftPackageReference "OllamaKit" */;
+			productName = OllamaKit;
+		};
+		837A56562D438AAF00DE1733 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 837A56552D438AAF00DE1733 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
+		};
+		837A56582D438AAF00DE1733 /* whisperkit-cli */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 837A56552D438AAF00DE1733 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = "whisperkit-cli";
+		};
+		837A565A2D438B1100DE1733 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 837A56542D438A7A00DE1733 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 837114612D43873D004BF04C /* Project object */;
 }

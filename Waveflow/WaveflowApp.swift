@@ -10,23 +10,27 @@ import SwiftData
 
 @main
 struct WaveflowApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @StateObject private var menuBarManager = MenuBarManager()
+    @StateObject private var permissionsManager = AudioPermissionsManager()
+    @StateObject private var whisperManager = WhisperManager()
+    @StateObject private var ollamaManager = OllamaManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(menuBarManager)
+                .environmentObject(permissionsManager)
+                .environmentObject(whisperManager)
+                .environmentObject(ollamaManager)
+                .preferredColorScheme(.light)
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(for: Note.self)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .background {
+                // App is entering background state, clean up resources
+                ollamaManager.shutdown()
+            }
+        }
     }
 }

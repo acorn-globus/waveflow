@@ -22,7 +22,7 @@ struct ModelDownloadSection: View {
                 
                 Text(whisperManager.modelState.description)
                     .foregroundColor(.secondary)
-                Text("This is a one time process. Whisper Small model will be downloaded and stored locally on your device.")
+                Text("This is a one time process. \(whisperManager.modelName.capitalized) model will be downloaded and stored locally on your device.")
                     .foregroundColor(.secondary)
             } else {
                 Text("Loading Ollama Model...")
@@ -32,7 +32,7 @@ struct ModelDownloadSection: View {
                     .progressViewStyle(.linear)
                     .frame(maxWidth: 300)
                 
-                Text("This is a one time process. Llama3.2:3b model will be downloaded and stored locally on your device.")
+                Text("This is a one time process. \(ollamaManager.defaultModel.capitalized) model will be downloaded and stored locally on your device.")
                     .foregroundColor(.secondary)
             }
             

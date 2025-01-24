@@ -190,6 +190,7 @@ struct NoteDetailSection: View {
             .navigationTitle(note.title)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .frame(minWidth: 900, minHeight: 600)
         .onAppear {
             if whisperManager.isRecording || ollamaManager.isGeneratingSummary || !note.summary.isEmpty { return }
             whisperManager.toggleRecording()
@@ -274,5 +275,7 @@ struct NoteDetailSection: View {
         """
         
         try? await ollamaManager.generateResponse(prompt: prompt)
+        
+        
     }
 }

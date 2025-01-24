@@ -13,7 +13,7 @@ enum OllamaError: Error {
 @MainActor
 class OllamaManager: ObservableObject {
 //    private let defaultModel = "llama3.2"
-    private let defaultModel = "gemma2:2b"
+    @Published var defaultModel = "gemma2:2b"
 //    private let defaultModel = "orca-mini:3b"
 //    private let defaultModel = "phi3:mini"
 //    private let defaultModel = "mistral"

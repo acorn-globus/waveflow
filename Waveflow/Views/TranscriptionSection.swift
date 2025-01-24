@@ -84,5 +84,23 @@ struct TranscriptionSection: View {
             currentNote.summary.append(contentsOf: summaryData)
             modelContext.insert(currentNote)
         }
+        .onChange(of: ollamaManager.isGeneratingSummary) { _, isGenerating in
+            if !isGenerating {
+                currentNote.title = extractTitle(currentNote.summary)
+                modelContext.insert(currentNote)
+            }
+        }
+    }
+    
+    func extractTitle(_ summary: String) -> String {
+        let trimmedSummary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Look for the first line that starts with a Markdown heading (`# `)
+            if let titleLine = trimmedSummary.split(separator: "\n").first(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("# ") }) {
+                // Remove the `# ` prefix to get the title text
+                return titleLine.replacingOccurrences(of: "# ", with: "").trimmingCharacters(in: .whitespaces)
+            }
+            
+            return "Untitled" // Default title if no heading is found
     }
 }

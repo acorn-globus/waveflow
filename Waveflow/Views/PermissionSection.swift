@@ -44,7 +44,6 @@ struct PermissionSection: View {
             }
         }
         .padding(.horizontal)
-        .frame(width: 600)
     }
 }
 

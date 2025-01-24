@@ -49,7 +49,7 @@ class WhisperManager: ObservableObject {
     private var systemHypothesisWords: [WordTiming] = []
 
     private let tokenConfirmationsNeeded: Int = 2
-    private let modelName = "whisper-small"
+    @Published var modelName = "whisper-small"
     private let repoName = "argmaxinc/whisperkit-coreml"
 
     init() {
@@ -252,7 +252,6 @@ class WhisperManager: ObservableObject {
         let options = DecodingOptions(
             verbose: false,
             task: .transcribe,
-            language: "en",
             temperature: 0,
             sampleLength: 224,
             usePrefillPrompt: true,
@@ -309,7 +308,6 @@ class WhisperManager: ObservableObject {
         let options = DecodingOptions(
             verbose: false,
             task: .transcribe,
-            language: "en",
             temperature: 0,
             sampleLength: 224,
             usePrefillPrompt: true,

@@ -38,18 +38,6 @@ struct NoteDetailSection: View {
                             if selectedTab == Tab.summary && !note.summary.isEmpty {
                                 Markdown(note.summary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                if ollamaManager.isGeneratingSummary {
-                                    HStack{
-                                        ProgressView()
-                                            .frame(width: 48, height: 48)
-                                            .foregroundColor(Color.blue)
-                                        Text("Generating Summary...")
-                                    }
-                                    .padding(.horizontal ,24)
-                                    .padding(.vertical, 6)
-                                    .background(Color.blue.opacity(0.2))
-                                    .cornerRadius(4)
-                                }
                                 
                             }else{
                                 ZStack(alignment: .topLeading) {
@@ -88,6 +76,39 @@ struct NoteDetailSection: View {
                                                 isBodyFocused = true
                                             }
                                     }
+                                }
+                            }
+
+                            if ollamaManager.isGeneratingSummary {
+                                ZStack {
+                                    Rectangle()
+                                        .fill(Color.blue.opacity(0.1))
+                                        .frame(width: 240, height: 48)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            Rectangle()
+                                                .stroke(
+                                                    LinearGradient(
+                                                        gradient: Gradient(colors: [
+                                                            Color.blue.opacity(0.0),
+                                                            Color.blue.opacity(0.06),
+                                                            Color.blue.opacity(0.18),
+                                                        ]),
+                                                        startPoint: .top,
+                                                        endPoint: .bottom
+                                                    ),
+                                                    lineWidth: 1.25
+                                                )
+                                                .cornerRadius(8)
+                                        )
+                                    HStack{
+                                        ProgressView()
+                                            .frame(width: 20, height: 20)
+                                            .padding(.trailing, 12)
+                                        Text("Generating Summary...")
+                                    }
+                                    .padding(.horizontal ,24)
+                                    .padding(.vertical, 12)
                                 }
                             }
                         }

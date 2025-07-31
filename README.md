@@ -19,19 +19,7 @@ We built WaveFlow to address common pain points with existing solutions:
 
 ## 🚀 Getting Started
 
-```bash
-# Clone the repository
-git clone https://github.com/waveflow/waveflow.git
-
-# Navigate to the directory
-cd waveflow
-
-# Install dependencies
-npm install
-
-# Start the application
-npm start
-```
+TODO: fill in this space
 
 ## 🛣️ Roadmap
 
